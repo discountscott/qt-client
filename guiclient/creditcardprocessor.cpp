@@ -3070,6 +3070,7 @@ CreditCardProcessor::FraudCheckResult *CreditCardProcessor::cvvCodeLookup(QChar 
 
 void CreditCardProcessor::sslErrors(const QList<QSslError> &errors)
 {
+	/*
   if (DEBUG)
     qDebug() << "CreditCardProcessor::sslErrors(" << errors << ")";
 
@@ -3090,5 +3091,5 @@ void CreditCardProcessor::sslErrors(const QList<QSslError> &errors)
                               QMessageBox::Yes,
                               QMessageBox::No | QMessageBox::Default) == QMessageBox::Yes)
         httpobj->ignoreSslErrors();
-  }
+  }*/
 }
