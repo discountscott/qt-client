@@ -3049,14 +3049,15 @@ void salesOrderItem::sHandleSupplyOrder()
             _supplyDropShip->setChecked(_supplyOrderDropShipCache);
             return;
           }
-           XSqlQuery so;
-		  so.prepare( "SELECT * FROM cohead WHERE cohead_id=:cohead_id" );
-			so.bindValue(":cohead_id", _soheadid);
-			so.exec();
-			if (so.first()){
+
+           XSqlQuery sto;
+		  sto.prepare( "SELECT cohead_shiptoaddress1 FROM cohead WHERE cohead_id=:cohead_id" );
+			sto.bindValue(":cohead_id", _soheadid);
+			sto.exec();
+			if (sto.first()){
 
           if ( _supplyDropShip->isChecked() && _shiptoid < 1){
-		  if(so.value("cohead_shiptoaddress1").toString().isEmpty())
+		  if(sto.value("cohead_shiptoaddress1").toString().isEmpty())
 			  //removes the error if Free-Form Ship-To was used
 			{
 			 QMessageBox::critical(this, tr("Cannot Update Supply Order"),
