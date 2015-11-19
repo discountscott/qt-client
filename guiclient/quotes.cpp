@@ -194,7 +194,7 @@ void quotes::sConvert(int pType)
           check.exec();
           if (check.first())
           {
-            QMessageBox::critical(this, tr("Can not Convert"),
+            QMessageBox::critical(this, tr("Cannot Convert"),
                                 tr("<p>One or more of the selected Quotes have"
                                    " been converted.  You cannot convert an already"
                                    " converted Quote."));
@@ -329,11 +329,13 @@ void quotes::sConvert(int pType)
 void quotes::sConvertSalesOrder()
 {
   sConvert(0);
+  sFillList();
 }
 
 void quotes::sConvertInvoice()
 {
   sConvert(1);
+  sFillList();
 }
 
 void quotes::sCopy()

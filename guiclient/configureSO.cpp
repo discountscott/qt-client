@@ -12,6 +12,7 @@
 
 #include <QSqlError>
 #include <QMessageBox>
+#include <errorReporter.h>
 
 configureSO::configureSO(QWidget* parent, const char* name, bool /*modal*/, Qt::WindowFlags fl)
     : XAbstractConfigure(parent, fl)
@@ -65,9 +66,9 @@ configureSO::configureSO(QWidget* parent, const char* name, bool /*modal*/, Qt::
     _nextCmNumber->setText(configureconfigureSO.value("cmnumber"));
     _nextInNumber->setText(configureconfigureSO.value("innumber"));
   }
-  else if (configureconfigureSO.lastError().type() != QSqlError::NoError)
+  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving SO Setting Information"),
+                                configureconfigureSO, __FILE__, __LINE__))
   {
-    systemError(this, configureconfigureSO.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -225,6 +226,21 @@ configureSO::configureSO(QWidget* parent, const char* name, bool /*modal*/, Qt::
     else if(_metrics->value("SOReservationLocationMethod").toInt() == 3)
       _alpha->setChecked(true);
   }
+  
+  _ssosCust->setType(CLineEdit::ActiveCustomers);
+  _enableSSOS->setChecked(_metrics->boolean("SSOSEnabled"));
+  if (_enableSSOS->isChecked())
+  {
+    _ssosCust->setId(_metrics->value("SSOSDefaultCustId").toInt());
+    _ssosSaleType->setId(_metrics->value("SSOSDefaultSaleTypeId").toInt());
+    _ssosRequireInv->setChecked(_metrics->boolean("SSOSRequireInv"));
+    _ssosPrintSOAck->setChecked(_metrics->boolean("SSOSPrintSOAck"));
+    _ssosPrintPackList->setChecked(_metrics->boolean("SSOSPrintPackList"));
+    _ssosPrintInvoice->setChecked(_metrics->boolean("SSOSPrintInvoice"));
+  }
+  else
+    _ssosGroup->setEnabled(false);
+  
   adjustSize();
 }
 
@@ -368,9 +384,9 @@ bool configureSO::sSave()
   configureSave.bindValue(":cmnumber", _nextCmNumber->text().toInt());
   configureSave.bindValue(":innumber", _nextInNumber->text().toInt());
   configureSave.exec();
-  if (configureSave.lastError().type() != QSqlError::NoError)
+  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving SO Setting Information"),
+                                configureSave, __FILE__, __LINE__))
   {
-    systemError(this, configureSave.lastError().databaseText(), __FILE__, __LINE__);
     return false;
   }
 
@@ -387,13 +403,43 @@ bool configureSO::sSave()
     configureSave.prepare( "SELECT setNextRaNumber(:ranumber);" );
     configureSave.bindValue(":ranumber", _nextRaNumber->text().toInt());
     configureSave.exec();
-    if (configureSave.lastError().type() != QSqlError::NoError)
+    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving SO Setting Information"),
+                                  configureSave, __FILE__, __LINE__))
     {
-      systemError(this, configureSave.lastError().databaseText(), __FILE__, __LINE__);
       return false;
     }
   }
   _metrics->set("EnableReturnAuth", (_enableReturns->isChecked() || !_enableReturns->isCheckable()));
+  
+  if (_enableSSOS->isChecked())
+  {
+    if(!_ssosCust->isValid())
+    {
+      QMessageBox::critical(this, tr("No Customer selected"),
+                           tr("<p>You must select a Cash Customer # "
+                              "if Simple S/O is enabled."));
+      _ssosCust->setFocus();
+      return false;
+    }
+    
+    _metrics->set("SSOSEnabled", true);
+    _metrics->set("SSOSDefaultCustId", _ssosCust->id());
+    _metrics->set("SSOSDefaultSaleTypeId", _ssosSaleType->id());
+    _metrics->set("SSOSRequireInv", _ssosRequireInv->isChecked());
+    _metrics->set("SSOSPrintSOAck", _ssosPrintSOAck->isChecked());
+    _metrics->set("SSOSPrintPackList", _ssosPrintPackList->isChecked());
+    _metrics->set("SSOSPrintInvoice", _ssosPrintInvoice->isChecked());
+  }
+  else
+  {
+    _metrics->set("SSOSEnabled", false);
+    _metrics->set("SSOSDefaultCustId", -1);
+    _metrics->set("SSOSDefaultSaleTypeId", -1);
+    _metrics->set("SSOSRequireInv", false);
+    _metrics->set("SSOSPrintSOAck", false);
+    _metrics->set("SSOSPrintPackList", false);
+    _metrics->set("SSOSPrintInvoice", false);
+  }
 
   return true;
 }
