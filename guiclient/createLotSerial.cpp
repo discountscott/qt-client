@@ -10,6 +10,7 @@
 
 #include "createLotSerial.h"
 
+#include <QDebug>
 #include <QMessageBox>
 #include <QSqlError>
 #include <QValidator>
@@ -18,7 +19,7 @@
 #include <parameter.h>
 #include <openreports.h>
 
-createLotSerial::createLotSerial(QWidget* parent, const char* name, bool modal, Qt::WFlags fl)
+createLotSerial::createLotSerial(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl),
       _lotsFound(false)
 {
@@ -28,7 +29,7 @@ createLotSerial::createLotSerial(QWidget* parent, const char* name, bool modal, 
   connect(_lotSerial, SIGNAL(textChanged(QString)), this, SLOT(sHandleLotSerial()));
   connect(_lotSerial, SIGNAL(newID(int)), this, SLOT(sHandleCharacteristics()));
 
-  _item->setReadOnly(TRUE);
+  _item->setReadOnly(true);
 
   _serial = false;
   _itemsiteid = -1;
@@ -83,7 +84,7 @@ enum SetResponse createLotSerial::set(const ParameterList &pParams)
       {
         _serial = true;
         _qtyToAssign->setText("1");
-        _qtyToAssign->setEnabled(FALSE);
+        _qtyToAssign->setEnabled(false);
       }
       else
         _serial = false;
@@ -101,10 +102,14 @@ enum SetResponse createLotSerial::set(const ParameterList &pParams)
                         "FROM lsdetail JOIN ls ON (ls_id=lsdetail_ls_id) "
                         "WHERE ( (lsdetail_source_number=:docnumber) "
                         "AND (lsdetail_source_type=:transtype) "
+                        "AND (lsdetail_itemsite_id IN (SELECT itemsite_id FROM itemsite "
+                        "                              WHERE itemsite_item_id = (SELECT itemsite_item_id "
+                        "                               FROM itemsite WHERE itemsite_id = :itemsite))) "
                         "AND (lsdetail_qtytoassign > 0) ) "
                         "GROUP BY 2,3");
       preassign.bindValue(":transtype", createet.value("invhist_transtype").toString());
       preassign.bindValue(":docnumber", createet.value("invhist_ordnumber").toString());
+      preassign.bindValue(":itemsite", createet.value("itemsite_id").toInt());
       preassign.exec();
       if (preassign.first())
       {
@@ -202,18 +207,17 @@ void createLotSerial::sHandleCharacteristics()
     if (_lotsFound)
     {
         XSqlQuery charQuery;
-        charQuery.prepare(QString("SELECT char.char_type, charass.charass_value "
+        charQuery.prepare(QString("SELECT DISTINCT char.char_name, char.char_type, charass.charass_value "
                           " FROM charass INNER JOIN char ON charass.charass_char_id=char.char_id "
                           " WHERE charass.charass_target_type='LS' AND "
                           " charass.charass_target_id=%1 "
-                          " ORDER BY charass.charass_id ASC").arg(ls_id));
+                          " ORDER BY char.char_name ASC").arg(ls_id));
         success = charQuery.exec();
         if (!success)
         {
             qDebug() << __FUNCTION__ << __LINE__ << charQuery.lastError().text();
         }
-        int i=0;
-        while(charQuery.next())
+        for (int i = 0; charQuery.next() && i < _charWidgets.length(); i++)
         {
             QString charass_value = charQuery.value("charass_value").toString();
             int char_type = charQuery.value("char_type").toInt();
@@ -226,11 +230,12 @@ void createLotSerial::sHandleCharacteristics()
             else if (char_type == 1)
             {
                 XComboBox *x = qobject_cast<XComboBox *>(_charWidgets.at(i));
-                int index = x->findText(charass_value);
-                if (index > -1) {
+                if (x) {
+                  int index = x->findText(charass_value);
+                  if (index > -1) {
                     x->setCurrentIndex(index);
+                  }
                 }
-
             }
             else
             {
@@ -238,7 +243,6 @@ void createLotSerial::sHandleCharacteristics()
                 if (l)
                     l->setText(charass_value);
             }
-            i++;
         }
     }
     else
@@ -259,17 +263,20 @@ void createLotSerial::clearCharacteristics()
       if (char_types.at(i) == 2)
       {
           DLineEdit *l = qobject_cast<DLineEdit *>(_charWidgets.at(i));
-          l->clear();
+          if (l)
+            l->clear();
       }
       else if (char_types.at(i) == 1)
       {
           XComboBox *x = qobject_cast<XComboBox *>(_charWidgets.at(i));
-          x->setCurrentIndex(0);
+          if (x)
+            x->setCurrentIndex(0);
       }
       else
       {
           QLineEdit *l = qobject_cast<QLineEdit *>(_charWidgets.at(i));
-          l->clear();
+          if (l)
+            l->clear();
       }
    }
 }
@@ -340,14 +347,19 @@ void createLotSerial::sAssign()
   
   if (_preassigned)
   {
-    createAssign.prepare("SELECT lsdetail_qtytoassign "
-              "FROM lsdetail "
-              "WHERE (lsdetail_id=:lsdetail_id);");
+    createAssign.prepare("SELECT SUM(lsd.lsdetail_qtytoassign) AS qtytoassign "
+              "FROM lsdetail lsd "
+              "JOIN lsdetail lsd2 "
+              "  ON (lsd.lsdetail_source_id=lsd2.lsdetail_source_id "
+              "    AND lsd.lsdetail_ls_id = lsd2.lsdetail_ls_id "
+              "    AND lsd.lsdetail_source_type = lsd2.lsdetail_source_type "
+              "    AND lsd.lsdetail_source_number = lsd2.lsdetail_source_number) "
+              " WHERE (lsd2.lsdetail_id=:lsdetail_id);");
     createAssign.bindValue(":lsdetail_id", _lotSerial->id());
     createAssign.exec();
     if (createAssign.first())
     {
-      if ( _qtyToAssign->toDouble() > createAssign.value("lsdetail_qtytoassign").toDouble() )
+      if ( _qtyToAssign->toDouble() > createAssign.value("qtytoassign").toDouble() )
       {
         QMessageBox::critical( this, tr("Invalid Qty"),
                                tr( "<p>The quantity being assigned is greater than the "

@@ -18,6 +18,7 @@
     @brief   The implementation of Authorize.Net-specific credit card handling
  */
 
+#include <QDebug>
 #include <QSqlError>
 
 #include <currcluster.h>
@@ -40,7 +41,7 @@ AuthorizeDotNetProcessor::AuthorizeDotNetProcessor() : CreditCardProcessor()
 {
   _company = "Authorize.Net";
   _defaultLivePort   = 443;
-  _defaultLiveServer = "https://secure.authorize.net/gateway/transact.dll";
+  _defaultLiveServer = "https://secure2.authorize.net/gateway/transact.dll";
   _defaultTestPort   = 443;
   _defaultTestServer = "https://test.authorize.net/gateway/transact.dll";
 
@@ -122,7 +123,7 @@ int AuthorizeDotNetProcessor::buildCommon(const int pccardid, const QString &pcv
     APPENDFIELD(prequest, "x_delim_char", _metrics->value("CCANDelim"));
 
   APPENDFIELD(prequest, "x_version",      _metrics->value("CCANVer"));
-  APPENDFIELD(prequest, "x_delim_data", "TRUE");
+  APPENDFIELD(prequest, "x_delim_data", "true");
 
   if (! _metrics->value("CCANEncap").isEmpty())
     APPENDFIELD(prequest, "x_encap_char", _metrics->value("CCANEncap"));
@@ -134,9 +135,9 @@ int AuthorizeDotNetProcessor::buildCommon(const int pccardid, const QString &pcv
   APPENDFIELD(prequest, "x_card_num", anq.value("ccard_number").toString());
 
   if (_metrics->value("CCServer").contains("test.authorize.net")) {
-    APPENDFIELD(prequest, "x_test_request", "FALSE");
+    APPENDFIELD(prequest, "x_test_request", "false");
   } else {
-    APPENDFIELD(prequest, "x_test_request", isLive() ? "FALSE" : "TRUE");
+    APPENDFIELD(prequest, "x_test_request", isLive() ? "false" : "true");
   }
 
   // TODO: if check and not credit card transaction do something else
@@ -147,7 +148,7 @@ int AuthorizeDotNetProcessor::buildCommon(const int pccardid, const QString &pcv
   APPENDFIELD(prequest, "x_exp_date",
 	      work_month + anq.value("ccard_year_expired").toString().right(2));
 
-  APPENDFIELD(prequest, "x_relay_response", "FALSE");
+  APPENDFIELD(prequest, "x_relay_response", "false");
   APPENDFIELD(prequest, "x_duplicate_window",
 			_metrics->value("CCANDuplicateWindow"));
 
@@ -188,7 +189,7 @@ int AuthorizeDotNetProcessor::buildCommon(const int pccardid, const QString &pcv
     APPENDFIELD(prequest, "x_card_code", pcvv);
 
   if (DEBUG)
-    qDebug("AN:buildCommon built %s\n", prequest.toAscii().data());
+    qDebug("AN:buildCommon built %s\n", prequest.toLatin1().data());
   return 0;
 }
 
@@ -234,7 +235,7 @@ int AuthorizeDotNetProcessor::buildFollowup(const int pccpayid, const QString &p
     APPENDFIELD(prequest, "x_encap_char", _metrics->value("CCANEncap"));
 
   APPENDFIELD(prequest, "x_version",      _metrics->value("CCANVer"));
-  APPENDFIELD(prequest, "x_delim_data", "TRUE");
+  APPENDFIELD(prequest, "x_delim_data", "true");
   APPENDFIELD(prequest, "x_login",    _metricsenc->value("CCLogin"));
   APPENDFIELD(prequest, "x_tran_key", _metricsenc->value("CCPassword"));
   APPENDFIELD(prequest, "x_trans_id", ptransid);
@@ -242,12 +243,12 @@ int AuthorizeDotNetProcessor::buildFollowup(const int pccpayid, const QString &p
   APPENDFIELD(prequest, "x_method",   "CC");
 
   if (_metrics->value("CCServer").contains("test.authorize.net")) {
-    APPENDFIELD(prequest, "x_test_request", "FALSE");
+    APPENDFIELD(prequest, "x_test_request", "false");
   } else {
-    APPENDFIELD(prequest, "x_test_request", isLive() ? "FALSE" : "TRUE");
+    APPENDFIELD(prequest, "x_test_request", isLive() ? "false" : "true");
   }
 
-  APPENDFIELD(prequest, "x_relay_response", "FALSE");
+  APPENDFIELD(prequest, "x_relay_response", "false");
   APPENDFIELD(prequest, "x_duplicate_window",
 			_metrics->value("CCANDuplicateWindow"));
 
@@ -270,7 +271,7 @@ int AuthorizeDotNetProcessor::buildFollowup(const int pccpayid, const QString &p
   APPENDFIELD(prequest, "x_type",       pordertype);
 
   if (DEBUG)
-    qDebug("AN:buildFollowup built %s\n", prequest.toAscii().data());
+    qDebug("AN:buildFollowup built %s\n", prequest.toLatin1().data());
   return 0;
 }
 
@@ -279,7 +280,7 @@ int  AuthorizeDotNetProcessor::doAuthorize(const int pccardid, const QString &pc
   if (DEBUG)
     qDebug("AN:doAuthorize(%d, pcvv, %f, %f, %d, %f, %f, %d, %s, %s, %d)",
 	   pccardid, pamount, ptax, ptaxexempt,  pfreight,  pduty, pcurrid,
-	   pneworder.toAscii().data(), preforder.toAscii().data(), pccpayid);
+	   pneworder.toLatin1().data(), preforder.toLatin1().data(), pccpayid);
 
   int    returnValue = 0;
   double amount  = pamount;
@@ -311,7 +312,7 @@ int  AuthorizeDotNetProcessor::doAuthorize(const int pccardid, const QString &pc
     return returnValue;
 
   APPENDFIELD(request, "x_tax",        QString::number(tax, 'f', 2));
-  APPENDFIELD(request, "x_tax_exempt", ptaxexempt ? "TRUE" : "FALSE");
+  APPENDFIELD(request, "x_tax_exempt", ptaxexempt ? "true" : "false");
   APPENDFIELD(request, "x_freight",    QString::number(freight, 'f', 2));
   APPENDFIELD(request, "x_duty",       QString::number(duty,    'f', 2));
 
@@ -335,7 +336,7 @@ int  AuthorizeDotNetProcessor::doCharge(const int pccardid, const QString &pcvv,
   if (DEBUG)
     qDebug("AN:doCharge(%d, pcvv, %f, %f, %d, %f, %f, %d, %s, %s, %d)",
 	   pccardid, pamount,  ptax, ptaxexempt,  pfreight,  pduty, pcurrid,
-	   pneworder.toAscii().data(), preforder.toAscii().data(), pccpayid);
+	   pneworder.toLatin1().data(), preforder.toLatin1().data(), pccpayid);
 
   int    returnValue = 0;
   double amount  = pamount;
@@ -368,7 +369,7 @@ int  AuthorizeDotNetProcessor::doCharge(const int pccardid, const QString &pcvv,
     return returnValue;
 
   APPENDFIELD(request, "x_tax",        QString::number(tax, 'f', 2));
-  APPENDFIELD(request, "x_tax_exempt", ptaxexempt ? "TRUE" : "FALSE");
+  APPENDFIELD(request, "x_tax_exempt", ptaxexempt ? "true" : "false");
   APPENDFIELD(request, "x_freight",    QString::number(freight, 'f', 2));
   APPENDFIELD(request, "x_duty",       QString::number(duty,    'f', 2));
 
@@ -393,7 +394,7 @@ int AuthorizeDotNetProcessor::doChargePreauthorized(const int pccardid, const QS
   if (DEBUG)
     qDebug("AN:doChargePreauthorized(%d, pcvv, %f, %d, %s, %s, %d)",
 	   pccardid, pamount,  pcurrid,
-	   pneworder.toAscii().data(), preforder.toAscii().data(), pccpayid);
+	   pneworder.toLatin1().data(), preforder.toLatin1().data(), pccpayid);
 
   int    returnValue = 0;
   double amount  = pamount;
@@ -421,7 +422,7 @@ int AuthorizeDotNetProcessor::doCredit(const int pccardid, const QString &pcvv, 
   if (DEBUG)
     qDebug("AN:doCredit(%d, pcvv, %f, %f, %d, %f, %f, %d, %s, %s, %d)",
 	   pccardid, pamount, ptax, ptaxexempt,  pfreight,  pduty, pcurrid,
-	   pneworder.toAscii().data(), preforder.toAscii().data(), pccpayid);
+	   pneworder.toLatin1().data(), preforder.toLatin1().data(), pccpayid);
 
   int     returnValue = 0;
   double  amount  = pamount;
@@ -499,8 +500,8 @@ int AuthorizeDotNetProcessor::doVoidPrevious(const int pccardid, const QString &
   if (DEBUG)
     qDebug("AN:doVoidPrevious(%d, pcvv, %f, %d, %s, %s, %s, %d)",
 	   pccardid, pamount, pcurrid,
-	   pneworder.toAscii().data(), preforder.toAscii().data(),
-	   papproval.toAscii().data(), pccpayid);
+	   pneworder.toLatin1().data(), preforder.toLatin1().data(),
+	   papproval.toLatin1().data(), pccpayid);
 
   QString tmpErrorMsg = _errorMsg;
 
@@ -543,17 +544,15 @@ int AuthorizeDotNetProcessor::fieldValue(const QStringList plist, const int pind
     pvalue = pvalue.mid(firstPos + 1, lastPos - firstPos - 1);
   }
   if (DEBUG)
-    qDebug("AN:fieldValue of %d is %s", pindex, pvalue.toAscii().data());
+    qDebug("AN:fieldValue of %d is %s", pindex, pvalue.toLatin1().data());
   return 0;
 }
 
 int AuthorizeDotNetProcessor::handleResponse(const QString &presponse, const int pccardid, const QString &ptype, const double pamount, const int pcurrid, QString &pneworder, QString &preforder, int &pccpayid, ParameterList &pparams)
 {
   if (DEBUG)
-    qDebug("AN::handleResponse(%s, %d, %s, %f, %d, %s, %d, pparams)",
-	   presponse.toAscii().data(), pccardid,
-	   ptype.toAscii().data(), pamount, pcurrid,
-	   preforder.toAscii().data(), pccpayid);
+    qDebug() << "AN::handleResponse(" << presponse << pccardid << ptype << pamount
+             << pcurrid << preforder << pccpayid << "pparams)";
 
   // if we got an error msg very early on
   if (presponse.startsWith("<HTML>"))
@@ -579,8 +578,10 @@ int AuthorizeDotNetProcessor::handleResponse(const QString &presponse, const int
   QString r_tax;
   QString r_pantrunc;
   QString r_cardtype;
+  QString r_hash;
 
   QString status;
+  bool    isCP; // looks like an (unsupported) card-present transaction
 
   // TODO: explore using encap here and code from CSV Import to properly split
 
@@ -595,6 +596,16 @@ int AuthorizeDotNetProcessor::handleResponse(const QString &presponse, const int
   int returnValue = fieldValue(responseFields, 1, r_response);
   if (returnValue < 0)
     return returnValue;
+
+  if (! QRegExp("[1-4]").exactMatch(r_response) &&
+      QRegExp("\\d+\\.\\d+").exactMatch(r_response))
+  {
+    qDebug() << "Looks like A.N returned a unsupported Card-Present response:" << r_response;
+    isCP = true;
+    returnValue = fieldValue(responseFields, 2, r_response);
+    if (returnValue < 0)
+      return returnValue;
+  }
 
   if (r_response.toInt() == 1)
     r_approved = "APPROVED";
@@ -620,38 +631,44 @@ int AuthorizeDotNetProcessor::handleResponse(const QString &presponse, const int
   returnValue = fieldValue(responseFields, 6, r_avs);	 	// avs result
   if (returnValue < 0)
     return returnValue;
+
+  if (isCP)
+  {
+    returnValue = fieldValue(responseFields, 8, r_ordernum);	// transaction id
+    if (returnValue < 0)
+      return returnValue;
+
+    returnValue = fieldValue(responseFields, 7, r_cvv); // ccv response code
+    if (returnValue < 0 && ptype == "CP") // may not get cvv on preauth capture
+      returnValue = 0;
+    else if (returnValue < 0)
+      return returnValue;
+
+    returnValue = fieldValue(responseFields, 9, r_hash);	// md5 hash
+
+  } else {
   returnValue = fieldValue(responseFields, 7, r_ordernum);	// transaction id
 
   if (returnValue < 0)
     return returnValue;
 
-  // fieldValue(responseFields, 8-10);	// echo invoice_number description amount
-  // fieldValue(responseFields, 11-13);	// echo method transtype cust_id
-  // fieldValue(responseFields, 14-24);	// echo name, company, and address info
-  // fieldValue(responseFields, 25-32);	// echo ship_to fields
-
   returnValue = fieldValue(responseFields, 33, r_tax);		// echo x_tax
   if (returnValue < 0)
     return returnValue;
-
-  // fieldValue(responseFields, 34);				// echo x_duty
 
   returnValue = fieldValue(responseFields, 35, r_shipping);	// echo x_freight
   if (returnValue < 0)
     return returnValue;
 
-  // fieldValue(responseFields, 36);		// echo x_tax_exempt
-  // fieldValue(responseFields, 37);		// echo x_po_num
-  // fieldValue(responseFields, 38);		// MD5 hash
+  returnValue = fieldValue(responseFields, 38, r_hash);	// md5 hash
+  if (returnValue < 0)
+    return returnValue;
 
   returnValue = fieldValue(responseFields, 39, r_cvv); // ccv response code
   if (returnValue < 0 && ptype == "CP") // may not get cvv on preauth capture
     returnValue = 0;
   else if (returnValue < 0)
     return returnValue;
-
-  // fieldValue(responseFields, 40);		// cavv response code
-  // fieldValue(responseFields, 41-50);		// reserved for future use
 
   returnValue = fieldValue(responseFields, 51, r_pantrunc);
   if (returnValue < 0)
@@ -661,17 +678,13 @@ int AuthorizeDotNetProcessor::handleResponse(const QString &presponse, const int
   returnValue = fieldValue(responseFields, 52, r_cardtype);
   if (returnValue < 0)
     return returnValue;
+  }
+
   if (r_cardtype == "Discover" || r_cardtype == "MasterCard"
       || r_cardtype == "Visa"  || r_cardtype == "American Express")
     r_cardtype.remove(1, r_cardtype.length());
   else
     r_cardtype = "O";
-
-  // fieldValue(responseFields, 53);            // split tender id
-  // fieldValue(responseFields, 54);            // original authorization amt
-  // fieldValue(responseFields, 55);            // debit/prepaid card balance
-  // fieldValue(responseFields, 56-68);		// reserved for future use
-  // fieldValue(responseFields, 69+);		// echo of merchant-defined fields
 
   /* treat heldforreview as approved because the AIM doc says response
      reason codes 252 and 253 are both approved but being reviewed.
@@ -759,9 +772,6 @@ int AuthorizeDotNetProcessor::handleResponse(const QString &presponse, const int
   if (returnValue == 0 && _metrics->boolean("CCANMD5HashSetOnGateway"))
   {
     QString expected_hash;
-    QString r_hash;
-
-    returnValue = fieldValue(responseFields, 38, r_hash);	// md5 hash
     XSqlQuery anq;
     anq.prepare("SELECT UPPER(MD5(:inputstr)) AS expected;");
     anq.bindValue(":inputstr", _metricsenc->value("CCANMD5Hash") +
@@ -778,7 +788,7 @@ int AuthorizeDotNetProcessor::handleResponse(const QString &presponse, const int
     }
     if (DEBUG)
       qDebug("AN:handleResponse expected md5 %s and got %s",
-	      expected_hash.toAscii().data(), r_hash.toAscii().data());
+	      expected_hash.toLatin1().data(), r_hash.toLatin1().data());
 
     if (_metrics->value("CCANMD5HashAction") == "F" && expected_hash != r_hash)
     {
@@ -794,7 +804,7 @@ int AuthorizeDotNetProcessor::handleResponse(const QString &presponse, const int
 
   if (DEBUG)
     qDebug("AN::handleResponse returning %d %s",
-           returnValue, errorMsg().toAscii().data());
+           returnValue, errorMsg().toLatin1().data());
   return returnValue;
 }
 

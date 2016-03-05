@@ -26,7 +26,7 @@
 #include "../common/shortcuts.h"
 #include "imageview.h"
 
-#define DEBUG true
+#define DEBUG false
 
 class StackDescriptor
 {
@@ -65,6 +65,8 @@ class docAttachPrivate {
       map.insert(Documents::Vendor,            new StackDescriptor(p->_vendPage,    p->_vend));
       map.insert(Documents::Uninitialized,     new StackDescriptor(p->_urlPage,     p->_url));
       map.insert(Documents::WorkOrder,         new StackDescriptor(p->_woPage,      p->_wo));
+
+      if (! _x_privileges) return; // Qt Designer doesn't connect to the database
 
       XSqlQuery q("SELECT * FROM source"
                   " WHERE source_widget NOT IN ('', 'core');");
@@ -123,7 +125,7 @@ class docAttachPrivate {
  *  the screen will return a docass_id to the calling screen.
  */
 
-docAttach::docAttach(QWidget* parent, const char* name, bool modal, Qt::WFlags fl)
+docAttach::docAttach(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
   : QDialog(parent, fl)
 {
   setupUi(this);
@@ -154,9 +156,9 @@ docAttach::docAttach(QWidget* parent, const char* name, bool modal, Qt::WFlags f
                      " WHERE source_widget != ''"
                      " UNION SELECT -2, 'File',     'FILE'"
                      " UNION SELECT -3, 'Web Site', 'URL') data"
-                     " ORDER BY source_name;");
+                     " ORDER BY source_descrip;");
 
-#ifndef Q_WS_MAC
+#ifndef Q_OS_MAC
     _fileList->setMaximumWidth(25);
 #else
     _fileList->setMinimumWidth(60);
@@ -196,6 +198,7 @@ void docAttach::set(const ParameterList &pParams)
   param = pParams.value("url_id", &valid);
   if(valid)
   {
+    if (DEBUG) qDebug() << "got url_id" << param;
     XSqlQuery qry;
     _urlid = param.toInt();
     qry.prepare("SELECT url_source, url_source_id, url_title, url_url, url_stream "
@@ -210,10 +213,16 @@ void docAttach::set(const ParameterList &pParams)
       if (url.scheme().isEmpty())
         url.setScheme("file");
 
+      if (DEBUG) qDebug() << qry.value("url_url") << "converted to" << url;
+
       _url->setText(url.toString());
       if (url.scheme() == "file")
       {
-        _docType->setId(-3);
+        if (DEBUG)
+          qDebug() << "file title:"    << qry.value("url_title").toString()
+                   << " text:"         << url.toString()
+                   << "stream length:" << qry.value("url_stream").toString().length();
+        _docType->setId(-2);
         _filetitle->setText(qry.value("url_title").toString());
         _file->setText(url.toString());
         if (qry.value("url_stream").toString().length())
@@ -225,7 +234,10 @@ void docAttach::set(const ParameterList &pParams)
       }
       else
       {
-        _docType->setId(-2);
+        if (DEBUG)
+          qDebug() << "! file title:" << qry.value("url_title").toString()
+                   << " text:" << url.toString();
+        _docType->setId(-3);
         _urltitle->setText(qry.value("url_title").toString());
         _url->setText(url.toString());
       }
@@ -281,8 +293,9 @@ void docAttach::sHandleButtons()
   }
   else
   {
-    qDebug() << pageDesc->docWidget->objectName() << "is a"
-             << pageDesc->docWidget->metaObject()->className();
+    if (DEBUG)
+      qDebug() << pageDesc->docWidget->objectName() << "is a"
+               << pageDesc->docWidget->metaObject()->className();
     _docAttachPurpose->setEnabled(false);
     _docAttachPurpose->setCurrentIndex(0);
     _save->setEnabled(true); // presumably we're on the file or url stack page
@@ -432,7 +445,7 @@ void docAttach::sSave()
       newDocass.prepare( "INSERT INTO url "
                          "( url_source, url_source_id, url_title, url_url, url_stream ) "
                          "VALUES "
-                         "( :docass_source_type, :docass_source_id, :title, :url, E:stream );" );
+                         "( :docass_source_type, :docass_source_id, :title, :url, :stream );" );
     else
       newDocass.prepare( "UPDATE url SET "
                          "  url_title = :title, "

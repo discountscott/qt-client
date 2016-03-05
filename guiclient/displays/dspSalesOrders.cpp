@@ -20,7 +20,7 @@
 #include "salesOrder.h"
 #include "parameterwidget.h"
 
-dspSalesOrders::dspSalesOrders(QWidget* parent, const char*, Qt::WFlags fl)
+dspSalesOrders::dspSalesOrders(QWidget* parent, const char*, Qt::WindowFlags fl)
   : display(parent, "dspSalesOrders", fl)
 {
   setupUi(optionsWidget());
@@ -29,7 +29,8 @@ dspSalesOrders::dspSalesOrders(QWidget* parent, const char*, Qt::WFlags fl)
   setMetaSQLOptions("salesOrders", "detail");
   /* setReportName("ListSalesOrders");  */
   setParameterWidgetVisible(true);
-  setNewVisible(true);
+  if(_privileges->check("MaintainSalesOrders"))
+    setNewVisible(true);
   setQueryOnStartEnabled(false);
   setAutoUpdateEnabled(true);
 
@@ -129,7 +130,7 @@ void dspSalesOrders::sCopyOrder()
   ParameterList params;
   params.append("sohead_id", list()->id());
       
-  copySalesOrder newdlg(this, "", TRUE);
+  copySalesOrder newdlg(this, "", true);
   newdlg.set(params);
   newdlg.exec();
 }

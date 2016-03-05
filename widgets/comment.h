@@ -31,7 +31,7 @@ class XTUPLEWIDGETS_EXPORT comment : public QDialog
     friend class Comments;
 
   public:
-    comment(QWidget * = 0, const char * = 0, bool = FALSE, Qt::WindowFlags = 0);
+    comment(QWidget * = 0, const char * = 0, bool = false, Qt::WindowFlags = 0);
 
     XComboBox* _cmnttype;
     XTextEdit* _comment;
@@ -50,6 +50,9 @@ class XTUPLEWIDGETS_EXPORT comment : public QDialog
     virtual void sNextComment();
     virtual void sPrevComment();
 
+  protected slots:
+    virtual void saveSize();
+
   private:
     XSqlQuery _query;
     QList <QVariant> _commentIDList;
@@ -57,6 +60,7 @@ class XTUPLEWIDGETS_EXPORT comment : public QDialog
     int _commentid;
     int _targetId;
     int _mode;
+    QString _sourcetype;
     enum Comments::CommentSources _source;
 };
 

@@ -12,12 +12,11 @@
 
 #include <QSqlError>
 
-#include "characteristic.h"
 #include "guiclient.h"
 #include "incident.h"
 #include "parameterwidget.h"
 
-incidentWorkbench::incidentWorkbench(QWidget* parent, const char*, Qt::WFlags fl)
+incidentWorkbench::incidentWorkbench(QWidget* parent, const char*, Qt::WindowFlags fl)
   : display(parent, "incidentWorkbench", fl)
 {
   setWindowTitle(tr("Incidents"));
@@ -79,7 +78,7 @@ incidentWorkbench::incidentWorkbench(QWidget* parent, const char*, Qt::WFlags fl
   connect(list(), SIGNAL(itemSelected(int)), this, SLOT(sOpen()));
 
   if (!_privileges->check("MaintainAllIncidents") && !_privileges->check("MaintainPersonalIncidents"))
-    newAction()->setEnabled(FALSE);
+    newAction()->setEnabled(false);
 
   list()->addColumn(tr("Number"),      _orderColumn,Qt::AlignLeft, true, "incdt_number" );
   list()->addColumn(tr("Created"),     _dateColumn, Qt::AlignLeft, true, "incdt_timestamp" );
@@ -92,6 +91,7 @@ incidentWorkbench::incidentWorkbench(QWidget* parent, const char*, Qt::WFlags fl
   list()->addColumn(tr("Category"),    _userColumn, Qt::AlignLeft, false, "incdtcat_name");
   list()->addColumn(tr("Severity"),    _userColumn, Qt::AlignLeft, false, "incdtseverity_name");
   list()->addColumn(tr("Priority"),    _userColumn, Qt::AlignLeft, false, "incdtpriority_name");
+  list()->addColumn(tr("Priority Order"),    _userColumn, Qt::AlignLeft, false, "incdtpriority_order");
   list()->addColumn(tr("Contact"),     _userColumn, Qt::AlignLeft, false, "cntct_name");
   list()->addColumn(tr("Project"),     _userColumn, Qt::AlignLeft, false, "prj_number");
   if(_metrics->boolean("IncidentsPublicPrivate"))
@@ -99,7 +99,7 @@ incidentWorkbench::incidentWorkbench(QWidget* parent, const char*, Qt::WFlags fl
   list()->addColumn(tr("Item Number"),  _itemColumn, Qt::AlignLeft, false, "item_number");
   list()->addColumn(tr("Lot/Serial"),   _itemColumn, Qt::AlignLeft, false, "ls_number");
 
-  setupCharacteristics(characteristic::Incidents);
+  setupCharacteristics("INCDT");
   parameterWidget()->applyDefaultFilterSet();
 }
 

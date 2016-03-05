@@ -65,6 +65,9 @@ bool Documents::addToMap(int id,        QString key, QString trans,
 
 // Inconsistencies between here and the rest of the app: S? Q?
 QMap<QString, struct DocumentMap *> &Documents::documentMap() {
+  if (! _x_privileges)
+    return _strMap;
+
   if (_strMap.isEmpty()) {
     XSqlQuery q("SELECT * FROM source;");
     addToMap(Uninitialized,     "",      tr("[Pick a Document Type]")                           );
@@ -185,11 +188,26 @@ void Documents::sNewDoc(QString ptype, QString pui)
 
   ParameterList params;
   params.append("mode", "new");
-  int target_id;
-  QDialog* newdlg = qobject_cast<QDialog*>(_guiClientInterface->openWindow(ui, params, parentWidget(),Qt::WindowModal, Qt::Dialog));
-  target_id = newdlg->exec();
-  if (target_id != QDialog::Rejected) {
-    sInsertDocass(type, target_id);
+  int target_id = -1;
+  QWidget *window = _guiClientInterface->openWindow(ui, params, parentWidget(), Qt::WindowModal, Qt::Dialog);
+  QDialog *newdlg = qobject_cast<QDialog*>(window);
+  if (newdlg)
+  {
+    target_id = newdlg->exec();
+    if (target_id != QDialog::Rejected) {
+      sInsertDocass(type, target_id);
+    }
+  }
+  else if (window)
+  {
+    window->show();
+    // TODO: how do we get the ID and when?
+    // sInsertDocass(type, target_id);
+  }
+  else
+  {
+    QMessageBox::critical(this, tr("Error Creating Document"),
+                          tr("Cannot find the '%1'' window to create a %2").arg(ui, type));
   }
   refresh();
 }
@@ -200,7 +218,7 @@ void Documents::sNewImage()
   params.append("sourceType", _sourcetype);
   params.append("source_id", _sourceid);
 
-  imageAssignment newdlg(this, "", TRUE);
+  imageAssignment newdlg(this, "", true);
   newdlg.set(params);
 
   if (newdlg.exec() != QDialog::Rejected)
@@ -254,7 +272,7 @@ void Documents::sOpenDoc(QString mode)
       return;
 
     params.append("image_id", img.value("imageass_image_id").toInt());
-    imageview newdlg(this, "", TRUE);
+    imageview newdlg(this, "", true);
     newdlg.set(params);
 
     if (newdlg.exec() != QDialog::Rejected)
@@ -270,7 +288,7 @@ void Documents::sOpenDoc(QString mode)
       ParameterList params;
       params.append("url_id", targetid);
 
-      docAttach newdlg(this, "", TRUE);
+      docAttach newdlg(this, "", true);
       newdlg.set(params);
       newdlg.exec();
 
@@ -293,7 +311,7 @@ void Documents::sOpenDoc(QString mode)
       QDir tdir;
       // TODO: QDesktopServices::openUrl(urldb) on windows does not open files
       // containing spaces. why not?
-#ifdef Q_WS_WIN
+#ifdef Q_OS_WIN
       QString fileName = fi.fileName().remove(" ");
 #else
       QString fileName = fi.fileName();
@@ -318,7 +336,7 @@ void Documents::sOpenDoc(QString mode)
       tfile.write(qfile.value("url_stream").toByteArray());
       QUrl urldb;
       urldb.setUrl(tfile.fileName());
-#ifndef Q_WS_WIN
+#ifndef Q_OS_WIN
       urldb.setScheme("file");
 #endif
       tfile.close();
@@ -391,7 +409,7 @@ void Documents::sAttachDoc()
   params.append("sourceType", _sourcetype);
   params.append("source_id", _sourceid);
 
-  docAttach newdlg(this, "", TRUE);
+  docAttach newdlg(this, "", true);
   newdlg.set(params);
   newdlg.exec();
 
@@ -507,9 +525,7 @@ void Documents::refresh()
               " WHEN (target_type='IMG') THEN :image "
               " ELSE NULL "
               " END AS target_type_qtdisplayrole "
-              "FROM docinfo "
-              "WHERE ((source_type=:source) "
-              " AND (source_id=:sourceid)) "
+              " FROM _docinfo(:sourceid, :source)"
               "ORDER by target_type_qtdisplayrole, target_number; ");
   query.prepare(sql);
   query.bindValue(":inventory", tr("Inventory Description"));
@@ -573,7 +589,7 @@ void Documents::refresh()
   query.bindValue(":source",   _sourcetype);
   query.bindValue(":sourceid", _sourceid);
   query.exec();
-  _doc->populate(query,TRUE);
+  _doc->populate(query,true);
   ErrorReporter::error(QtCriticalMsg, this, tr("Error Getting Documents"),
                        query, __FILE__, __LINE__);
 }

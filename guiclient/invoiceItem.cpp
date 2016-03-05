@@ -16,6 +16,7 @@
 #include <QVariant>
 
 #include <metasql.h>
+#include "mqlutil.h"
 
 #include "xdoublevalidator.h"
 #include "priceList.h"
@@ -172,12 +173,12 @@ enum SetResponse invoiceItem::set(const ParameterList &pParams)
     {
       _mode = cView;
 
-      _itemTypeGroup->setEnabled(FALSE);
-      _custPn->setEnabled(FALSE);
-      _ordered->setEnabled(FALSE);
-      _billed->setEnabled(FALSE);
-      _price->setEnabled(FALSE);
-      _notes->setReadOnly(TRUE);
+      _itemTypeGroup->setEnabled(false);
+      _custPn->setEnabled(false);
+      _ordered->setEnabled(false);
+      _billed->setEnabled(false);
+      _price->setEnabled(false);
+      _notes->setReadOnly(true);
       _taxtype->setEnabled(false);
       _altRevAccnt->setEnabled(false);
       _qtyUOM->setEnabled(false);
@@ -309,22 +310,21 @@ void invoiceItem::sSave()
 void invoiceItem::populate()
 {
   XSqlQuery invcitem;
-  invcitem.prepare( "SELECT invcitem.*, invchead_invcnumber,"
-                    "       CASE WHEN (item_id IS NULL) THEN :na"
-                    "            ELSE item_listprice"
-                    "       END AS f_listprice,"
-                    "		taxzone_id,"
-                    "       invchead_curr_id AS taxcurr_id,"
-                    "       itemsite_costmethod"
-                    " FROM invcitem JOIN "
-                    "     invchead LEFT OUTER JOIN taxzone ON "
-                    "       (invchead_taxzone_id = taxzone_id) "
-                    "     ON (invcitem_invchead_id = invchead_id) LEFT OUTER JOIN "
-                    "     item ON (invcitem_item_id = item_id) "
-                    " LEFT OUTER JOIN invcitemtax ON (invcitem_id = taxhist_parent_id) "
-                    " LEFT OUTER JOIN itemsite ON (itemsite_item_id=item_id "
-                    "                          AND itemsite_warehous_id=invcitem_warehous_id)"
-                    "WHERE (invcitem_id = :invcitem_id);" );
+  invcitem.prepare("SELECT invcitem.*,"
+                   "       invchead_invcnumber, invchead_curr_id AS taxcurr_id,"
+                   "       CASE WHEN (item_id IS NULL) THEN :na"
+                   "            ELSE item_listprice"
+                   "       END AS f_listprice,"
+                   "		   taxzone_id, itemsite_costmethod,"
+                   "       COALESCE(cobill_id, -1) AS cobill_id "
+                   " FROM invcitem JOIN invchead ON (invchead_id=invcitem_invchead_id)"
+                   "               LEFT OUTER JOIN taxzone ON (taxzone_id=invchead_taxzone_id)"
+                   "               LEFT OUTER JOIN item ON (item_id=invcitem_item_id)"
+                   "               LEFT OUTER JOIN invcitemtax ON (taxhist_parent_id=invcitem_id)"
+                   "               LEFT OUTER JOIN itemsite ON (itemsite_item_id=item_id AND"
+                   "                                            itemsite_warehous_id=invcitem_warehous_id)"
+                   "               LEFT OUTER JOIN cobill ON (cobill_invcitem_id=invcitem_id) "
+                   "WHERE (invcitem_id = :invcitem_id);" );
   invcitem.bindValue(":invcitem_id", _invcitemid);
   invcitem.exec();
   if (invcitem.first())
@@ -334,18 +334,18 @@ void invoiceItem::populate()
     _lineNumber->setText(invcitem.value("invcitem_linenumber").toString());
 
     // TODO: should this check itemsite_controlmethod == N?
-    _trackqoh = (invcitem.value("invcitem_coitem_id").toInt() > 0 &&
+    _trackqoh = (invcitem.value("invcitem_invcitem_id").toInt() > 0 &&
                  invcitem.value("itemsite_costmethod").toString() != "J");
 
     if (invcitem.value("invcitem_item_id").toInt() != -1)
     {
-      _itemSelected->setChecked(TRUE);
+      _itemSelected->setChecked(true);
       _item->setId(invcitem.value("invcitem_item_id").toInt());
       _warehouse->setId(invcitem.value("invcitem_warehous_id").toInt());
     }
     else
     {
-      _miscSelected->setChecked(TRUE);
+      _miscSelected->setChecked(true);
       _itemNumber->setText(invcitem.value("invcitem_number"));
       _itemDescrip->setText(invcitem.value("invcitem_descrip").toString());
       _salescat->setId(invcitem.value("invcitem_salescat_id").toInt());
@@ -359,7 +359,7 @@ void invoiceItem::populate()
     // do tax stuff before invcitem_price and _tax_* to avoid signal cascade problems
     if (! invcitem.value("taxzone_id").isNull())
       _taxzoneid = invcitem.value("taxzone_id").toInt();
-	_tax->setId(invcitem.value("taxcurr_id").toInt());
+    _tax->setId(invcitem.value("taxcurr_id").toInt());
     _taxtype->setId(invcitem.value("invcitem_taxtype_id").toInt());
     _altRevAccnt->setId(invcitem.value("invcitem_rev_accnt_id").toInt());
 
@@ -385,6 +385,16 @@ void invoiceItem::populate()
 
     _custPn->setText(invcitem.value("invcitem_custpn").toString());
     _notes->setText(invcitem.value("invcitem_notes").toString());
+    
+    // disable widgets if normal shipping cycle
+    if (invcitem.value("cobill_id").toInt() > 0)
+    {
+      _item->setEnabled(false);
+      _warehouse->setEnabled(false);
+      _ordered->setEnabled(false);
+      _billed->setEnabled(false);
+      _qtyUOM->setEnabled(false);
+    }
   }
   else if (invcitem.lastError().type() != QSqlError::NoError)
   {
@@ -422,28 +432,36 @@ void invoiceItem::sPopulateItemInfo(int pItemid)
   XSqlQuery invoicePopulateItemInfo;
   if ( (_itemSelected->isChecked()) && (pItemid != -1) )
   {
-    XSqlQuery uom;
-    uom.prepare("SELECT uom_id, uom_name"
-                "  FROM item"
-                "  JOIN uom ON (item_inv_uom_id=uom_id)"
-                " WHERE(item_id=:item_id)"
-                " UNION "
-                "SELECT uom_id, uom_name"
-                "  FROM item"
-                "  JOIN itemuomconv ON (itemuomconv_item_id=item_id)"
-                "  JOIN uom ON (itemuomconv_to_uom_id=uom_id)"
-                " WHERE((itemuomconv_from_uom_id=item_inv_uom_id)"
-                "   AND (item_id=:item_id))"
-                " UNION "
-                "SELECT uom_id, uom_name"
-                "  FROM item"
-                "  JOIN itemuomconv ON (itemuomconv_item_id=item_id)"
-                "  JOIN uom ON (itemuomconv_from_uom_id=uom_id)"
-                " WHERE((itemuomconv_to_uom_id=item_inv_uom_id)"
-                "   AND (item_id=:item_id))"
-                " ORDER BY uom_name;");
-    uom.bindValue(":item_id", _item->id());
-    uom.exec();
+    // Get list of active, valid Selling UOMs
+    MetaSQLQuery muom = mqlLoad("uoms", "item");
+
+    ParameterList params;
+    params.append("uomtype", "Selling");
+    params.append("item_id", pItemid);
+
+    // Also have to factor UOMs previously used on Invoice now inactive
+    if (_invcitemid != -1)
+    {
+      XSqlQuery invuom;
+      invuom.prepare("SELECT invcitem_qty_uom_id, invcitem_price_uom_id "
+                "  FROM invcitem"
+                " WHERE(invcitem_id=:invcitem_id);");
+      invuom.bindValue(":invcitem_id", _invcitemid);
+      invuom.exec();
+      if (ErrorReporter::error(QtCriticalMsg, this, tr("Getting Invoice UOMs"),
+                           invuom, __FILE__, __LINE__))
+        return;
+      else if (invuom.first())
+      {
+        params.append("uom_id", invuom.value("invcitem_qty_uom_id"));
+        params.append("uom_id2", invuom.value("invcitem_price_uom_id"));
+      }
+    }
+    XSqlQuery uom = muom.toQuery(params);
+    if (ErrorReporter::error(QtCriticalMsg, this, tr("Getting UOMs"),
+                           uom, __FILE__, __LINE__))
+      return;
+
     _qtyUOM->populate(uom);
     _pricingUOM->populate(uom);
 

@@ -26,7 +26,7 @@ class purchaseOrder : public XWidget, public Ui::purchaseOrder
     Q_OBJECT
 
 public:
-    purchaseOrder(QWidget* parent = 0, const char* name = 0, Qt::WFlags fl = Qt::Window);
+    purchaseOrder(QWidget* parent = 0, const char* name = 0, Qt::WindowFlags fl = Qt::Window);
     ~purchaseOrder();
 
     Q_INVOKABLE virtual int id()   const;
@@ -44,14 +44,11 @@ public slots:
     virtual void sNew();
     virtual void sEdit();
     virtual void sDelete();
-    virtual void sNewCharacteristic();
-    virtual void sEditCharacteristic();
-    virtual void sDeleteCharacteristic();
-    virtual void sFillCharacteristic();
     virtual void sVendaddrList();
     virtual void sHandleDeleteButton();
     virtual void sHandleOrderDate();
     virtual void sHandleVendor( int pVendid );
+    virtual void sHandlePurchaseOrderEvent( int pPoheadid, bool );
     virtual void sFillList();
     virtual void sCalculateTotals();
     virtual void sSetUserOrderNumber();

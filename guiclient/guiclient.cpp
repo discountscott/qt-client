@@ -48,6 +48,8 @@
 #include "xdialog.h"
 #include "errorLog.h"
 #include "errorReporter.h"
+#include "login2.h"
+#include "storedProcErrorLookup.h"
 
 #include "systemMessage.h"
 #include "menuProducts.h"
@@ -75,11 +77,11 @@
 #include "setup.h"
 #include "setupscriptapi.h"
 
-#if defined(Q_OS_WIN32)
+#if defined(Q_OS_WIN)
 #define NOCRYPT
 #include <windows.h>
 #else
-#if defined(Q_OS_MACX)
+#if defined(Q_OS_MAC)
 #include <stdlib.h>
 #endif
 #endif
@@ -89,6 +91,9 @@ class Preferences;
 class Privileges;
 class Metricsenc;
 
+#ifdef Q_OS_MAC
+  extern void qt_mac_set_dock_menu(QMenu *menu);
+#endif
 /** @addtogroup globals Global Variables and Functions
 
     @brief
@@ -222,12 +227,12 @@ Action::Action( QWidget *pParent, const char *pName, const QString &pDisplayName
 Action::Action( QWidget *pParent, const char *pName, const QString &pDisplayName,
                 QObject *pTarget, const char *pActivateSlot,
                 QWidget *pAddTo, const QString & pEnabled,
-                const QPixmap &pIcon, QWidget *pToolBar ) :
+                const QPixmap *pIcon, QWidget *pToolBar ) :
  QAction(pDisplayName, pParent)
 {
   init(pParent, pName, pDisplayName, pTarget, pActivateSlot, pAddTo, pEnabled);
 
-  setIcon(QIcon(pIcon));
+  setIcon(QIcon(*pIcon));
   pToolBar->addAction(this);
 }
 
@@ -235,13 +240,13 @@ Action::Action( QWidget *pParent, const char *pName, const QString &pDisplayName
 Action::Action( QWidget *pParent, const char *pName, const QString &pDisplayName,
                 QObject *pTarget, const char *pActivateSlot,
                 QWidget *pAddTo, const QString & pEnabled,
-                const QPixmap &pIcon, QWidget *pToolBar,
+                const QPixmap *pIcon, QWidget *pToolBar,
                 const QString &pToolTip ) :
  QAction(pDisplayName, pParent)
 {
   init(pParent, pName, pDisplayName, pTarget, pActivateSlot, pAddTo, pEnabled);
 
-  setIcon(QIcon(pIcon));
+  setIcon(QIcon(*pIcon));
   pToolBar->addAction(this);
   setToolTip(pToolTip);
 }
@@ -570,6 +575,10 @@ GUIClient::GUIClient(const QString &pDatabaseURL, const QString &pUsername)
                     availableGeometry.top()));
     move(pos);
   }
+  #ifdef Q_OS_MAC
+    _menu = new QMenu(this);
+    updateMacDockMenu(this);
+  #endif
 
   setDocumentMode(true);
 
@@ -598,11 +607,11 @@ GUIClient::~GUIClient()
  */
 GUIClient::WindowSystem GUIClient::getWindowSystem()
 {
-#ifdef Q_WS_X11
+#ifdef Q_OS_LINUX
   return X11;
-#elif defined Q_WS_WIN
+#elif defined Q_OS_WIN
   return WIN;
-#elif defined Q_WS_MAC
+#elif defined Q_OS_MAC
   return MAC;
 #elif defined Q_WS_QWS
   return QWS;
@@ -709,7 +718,7 @@ void GUIClient::initMenuBar()
     menuBar()->clear();
     _hotkeyList.clear();
 
-    QList<QToolBar *> toolbars = qFindChildren<QToolBar *>(this);
+    QList<QToolBar *> toolbars = this->findChildren<QToolBar *>();
     while(!toolbars.isEmpty())
       delete toolbars.takeFirst();
 
@@ -783,15 +792,6 @@ void GUIClient::initMenuBar()
   findChild<QToolBar*>("CRM Tools")->setVisible(_preferences->boolean("ShowCRMToolbar"));
   findChild<QToolBar*>("Sales Tools")->setVisible(_preferences->boolean("ShowSOToolbar"));
   findChild<QToolBar*>("Accounting Tools")->setVisible(_preferences->boolean("ShowGLToolbar"));
-
-  findChild<QToolBar*>("Community Tools")->setVisible(_preferences->boolean("ShowPDToolbar") ||
-                                                      _preferences->boolean("ShowIMToolbar") ||
-                                                      _preferences->boolean("ShowMSToolbar") ||
-                                                      _preferences->boolean("ShowPOToolbar") ||
-                                                      _preferences->boolean("ShowWOToolbar") ||
-                                                      _preferences->boolean("ShowCRMToolbar") ||
-                                                      _preferences->boolean("ShowSOToolbar") ||
-                                                      _preferences->boolean("ShowGLToolbar"));
 
   firstRun = false;
   qApp->restoreOverrideCursor();
@@ -1032,21 +1032,46 @@ void GUIClient::sTick()
       emit(tick());
       __intervalCount = 0;
     }
-
-    _tick.singleShot(60000, this, SLOT(sTick()));
   }
   else
   {
     // Check to make sure we are not in the middle of an aborted transaction
     // before we go doing something rash.
-    if(tickle.lastError().databaseText().contains("current transaction is aborted"))
-      return;
-    systemError(this, tr("<p>You have been disconnected from the database server.  "
-                          "This is usually caused by an interruption in your "
-                          "network.  Please exit the application and restart."
-                          "<br><pre>%1</pre>" )
-                      .arg(tickle.lastError().databaseText()));
+    if (!QSqlDatabase::database().isOpen())
+    {
+      if  (QMessageBox::question(this, tr("Database disconnected"),
+                                tr("It appears that the you've been disconnected from the"
+                                   "database. Select Yes to try to reconnect or "
+                                   "No to terminate the application."),
+                                   QMessageBox::Yes,
+                                   QMessageBox::No | QMessageBox::Default) == QMessageBox::No)
+        qApp->quit();
+      else
+      {
+        if (QSqlDatabase::database().open())
+        {
+          QString loginqry ="SELECT login() AS result, CURRENT_USER AS user;";
+          XSqlQuery login( loginqry );
+          if (login.first())
+          {
+            int result = login.value("result").toInt();
+            if (result < 0)
+            {
+              QMessageBox::critical(this, tr("Error Relogging to the Database"),
+                                    storedProcErrorLookup("login", result));
+              return;
+            }
+          }
+          else if (login.lastError().type() != QSqlError::NoError)
+            QMessageBox::critical(this, tr("System Error"),
+                                  tr("A System Error occurred at %1::%2:\n%3")
+                                    .arg(__FILE__).arg(__LINE__)
+                                    .arg(login.lastError().databaseText()));
+        }
+      }
+    }
   }
+  _tick.singleShot(30000, this, SLOT(sTick()));
 }
 
 /** @brief Make the error button in the main window's status bar visible.
@@ -1102,16 +1127,16 @@ void GUIClient::sSystemMessageAdded()
             ParameterList params;
             params.append("mode", "acknowledge");
 
-            systemMessage newdlg(this, "", TRUE);
-            newdlg.set(params);
+            systemMessage *newdlg = new systemMessage();
+            newdlg->set(params);
 
             do
             {
               ParameterList params;
               params.append("msguser_id", msg.value("msguser_id").toInt());
 
-              newdlg.set(params);
-              newdlg.exec();
+              newdlg->set(params);
+              omfgThis->handleNewWindow(newdlg);
             }
             while (msg.next());
           }
@@ -1228,7 +1253,7 @@ void GUIClient::sStandardPeriodsUpdated()
   */
 void GUIClient::sSalesOrdersUpdated(int pSoheadid)
 {
-  emit salesOrdersUpdated(pSoheadid, TRUE);
+  emit salesOrdersUpdated(pSoheadid, true);
 }
 
 /** @brief This slot tells other open windows the definition or status of one or more Sales Representatives has changed.
@@ -1249,7 +1274,7 @@ void GUIClient::sCreditMemosUpdated()
     @param pQuheadid the internal id of the Quote that changed or -1 for multiple or unspecified Quotes */
 void GUIClient::sQuotesUpdated(int pQuheadid)
 {
-  emit quotesUpdated(pQuheadid, TRUE);
+  emit quotesUpdated(pQuheadid, true);
 }
 
 /** @brief This slot tells other open windows the definition or status of one or more Work Order Materials records has changed.
@@ -1561,7 +1586,7 @@ void GUIClient::sIdleTimeout()
   ParameterList params;
   params.append("minutes", _timeoutHandler->idleMinutes());
 
-  idleShutdown newdlg(this, "", TRUE);
+  idleShutdown newdlg(this, "", true);
   newdlg.set(params);
 
   if (newdlg.exec() == XDialog::Accepted)
@@ -1680,8 +1705,12 @@ QString translationFile(QString localestr, const QString component)
 QString translationFile(QString localestr, const QString component, QString &version)
 {
   QStringList paths;
-//qDebug() << QDesktopServices::storageLocation(QDesktopServices::DataLocation);
+#if QT_VERSION >= 0x050000
+  paths << QStandardPaths::standardLocations(QStandardPaths::DataLocation);
+#else
+  //qDebug() << QDesktopServices::storageLocation(QDesktopServices::DataLocation);
   paths << QDesktopServices::storageLocation(QDesktopServices::DataLocation);
+#endif
   paths << "/usr/lib/postbooks/dict";
   paths << "dict";
   paths << "";
@@ -1689,7 +1718,7 @@ QString translationFile(QString localestr, const QString component, QString &ver
   paths << QApplication::applicationDirPath() + "/dict";
   paths << QApplication::applicationDirPath();
   paths << QApplication::applicationDirPath() + "/../dict";
-#if defined Q_WS_MACX
+#if defined Q_OS_MAC
   paths << QApplication::applicationDirPath() + "/../../../dict";
   paths << QApplication::applicationDirPath() + "/../../..";
 #endif
@@ -1701,7 +1730,7 @@ QString translationFile(QString localestr, const QString component, QString &ver
     if (translator.load(filename))
     {
       if (! version.isNull())
-        version = translator.translate(component.toAscii().data(), "Version");
+        version = translator.translate(component.toLatin1().data(), "Version");
 
       return filename;
     }
@@ -1749,7 +1778,7 @@ void GUIClient::populateCustomMenu(QMenu * menu, const QString & module)
       allowed = "Custom"+privname;
 
     QString cmdname = QString("custom." + qry.value("cmd_name").toString());
-    Action *action = new Action(this, cmdname.toAscii().data(), qry.value("cmd_title").toString(),
+    Action *action = new Action(this, cmdname.toLatin1().data(), qry.value("cmd_title").toString(),
                                 this, SLOT(sCustomCommand()), customMenu, allowed);
 
     _customCommands.insert(action, qry.value("cmd_id").toInt());
@@ -1962,12 +1991,12 @@ void GUIClient::sCustomCommand()
   */
 void GUIClient::launchBrowser(QWidget * w, const QString & url)
 {
-#if defined(Q_OS_WIN32)
-  // Windows - let the OS do the work
+#if defined(Q_OS_WIN) && QT_VERSION < 0x050000
+  // Windows - let the OS do the work , needs qt5 replacement
   QT_WA( {
       ShellExecute(w->winId(), 0, (TCHAR*)url.utf16(), 0, 0, SW_SHOWNORMAL );
     } , {
-      ShellExecuteA( w->winId(), 0, url.toLocal8Bit(), 0, 0, SW_SHOWNORMAL );
+      ShellExecuteA(w->winId(), 0, url.toLocal8Bit(), 0, 0, SW_SHOWNORMAL );
     } );
 #else
   const char *b = getenv("BROWSER");
@@ -1976,7 +2005,7 @@ void GUIClient::launchBrowser(QWidget * w, const QString & url)
     QString t(b);
     browser = t.split(':', QString::SkipEmptyParts);
   }
-#if defined(Q_OS_MACX)
+#if defined(Q_OS_MAC)
   browser.append("/usr/bin/open");
 #else
   // append this on linux just as a good guess
@@ -2063,6 +2092,11 @@ void GUIClient::handleNewWindow(QWidget *w, Qt::WindowModality m, bool forceFloa
 {
   // TODO:  replace this function with a centralized openWindow function
   // used by toolbox, guiclient interface, and core windows
+
+  #ifdef Q_OS_MAC
+    	updateMacDockMenu(w);
+  #endif
+  
   if(!w->isModal())
   {
     if (w->parentWidget())
@@ -2143,7 +2177,7 @@ void GUIClient::handleNewWindow(QWidget *w, Qt::WindowModality m, bool forceFloa
 
 QMenuBar *GUIClient::menuBar()
 {
-#ifdef Q_WS_MACX
+#ifdef Q_OS_MAC
   if (_menuBar == 0)
     _menuBar = new QMenuBar();
 
@@ -2682,3 +2716,30 @@ void GUIClient::sEmitNotifyHeard(const QString &note)
     else if(note == "messagePosted")
         emit messageNotify();
 }
+#ifdef Q_OS_MAC
+    void GUIClient::updateMacDockMenu(QWidget *w)
+    {
+        QAction *action = new QAction(w);
+        action->setText(w->windowTitle());
+
+        _menu->addAction(action);
+
+        qt_mac_set_dock_menu(_menu);
+
+        connect(action, SIGNAL(triggered()), w, SLOT(hide()));
+        connect(action, SIGNAL(triggered()), w, SLOT(show()));
+    }
+
+    void GUIClient::removeFromMacDockMenu(QWidget *w)
+    {
+        foreach (QAction *action, _menu->actions())
+        {
+            if(action->text().compare(w->windowTitle()) == 0)
+            {
+                _menu->removeAction(action);
+            }
+        }
+
+        qt_mac_set_dock_menu(_menu);
+    }
+#endif

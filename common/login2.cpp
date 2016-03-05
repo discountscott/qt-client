@@ -37,7 +37,7 @@
 /* TODO: rename _nonxTupleDB to _isxTupleDB internally and
          set it based on db contents, not command line parameter input
  */
-login2::login2(QWidget* parent, const char* name, bool modal, Qt::WFlags fl)
+login2::login2(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : QDialog(parent, modal ? (fl | Qt::Dialog) : fl)
 {
   setObjectName(name);
@@ -54,8 +54,8 @@ login2::login2(QWidget* parent, const char* name, bool modal, Qt::WFlags fl)
   connect(_buttonBox, SIGNAL(helpRequested()), this, SLOT(sOpenHelp()));
   //connect(_options, SIGNAL(clicked()), this, SLOT(sOptions()));
   connect(_server, SIGNAL(editingFinished()), this, SLOT(sChangeURL()));
-  connect(_database, SIGNAL(editTextChanged(QString)), this, SLOT(sChangeURL()));
-  connect(_port, SIGNAL(textChanged(QString)), this, SLOT(sChangeURL()));
+  connect(_database->lineEdit(), SIGNAL(editingFinished()), this, SLOT(sChangeURL()));
+  connect(_port, SIGNAL(editingFinished()), this, SLOT(sChangeURL()));
   //connect(_otherOption, SIGNAL(toggled(bool)), _options, SLOT(setEnabled(bool)));
   //connect(_otherOption, SIGNAL(toggled(bool)), _recent, SLOT(setEnabled(bool)));
   //connect(_otherOption, SIGNAL(toggled(bool)), this, SLOT(sHandleButton()));
@@ -111,19 +111,19 @@ int login2::set(const ParameterList &pParams, QSplashScreen *pSplash)
   {
     _username->setText(param.toString());
     _password->setFocus();
-    _captive = TRUE;
+    _captive = true;
   }
   else
   {
     _username->setFocus();
-    _captive = FALSE;
+    _captive = false;
   }
 
   param = pParams.value("password", &valid);
   if (valid)
   {
     _password->setText(param.toString());
-    _captive = TRUE;
+    _captive = true;
   }
 
   param = pParams.value("copyright", &valid);
@@ -345,24 +345,24 @@ void login2::sLogin()
 
   if (db.isOpen())
   {
-    QString earliest = "8.4.0",
-            latest   = "9.4.0";
-    XSqlQuery checkVersion;
+    QString earliest = "9.1.0",
+            latest   = "9.5.0";
+    XSqlQuery checkVersion;   // include earliest in the range but exclude latest
     checkVersion.prepare("SELECT compareVersion(:earliest) <= 0"
-                         "   AND compareVersion(:latest)   >= 0 AS ok,"
+                         "   AND compareVersion(:latest)   > 0 AS ok,"
                          "       version() AS version;");
     checkVersion.bindValue(":earliest", earliest);
     checkVersion.bindValue(":latest",   latest);
     checkVersion.exec();
     if (checkVersion.first() && ! checkVersion.value("ok").toBool() &&
         QMessageBox::question(this, tr("Unsupported Database Server Version"),
-                              tr("<p>The database server is at version %1 "
-                                 "but xTuple ERP only supports %2 to %3.</p>"
-                                 "<p>Continue anyway?</p>")
+                              tr("<p>The database server is at version %1 but "
+                                 "xTuple ERP only supports from %2 up to but "
+                                 "not including %3.</p><p>Continue anyway?</p>")
                                 .arg(checkVersion.value("version").toString(),
                                      earliest, latest),
-                              QMessageBox::Yes,
-                              QMessageBox::No | QMessageBox::Default) == QMessageBox::No) {
+                              QMessageBox::Yes | QMessageBox::No,
+                              QMessageBox::No) == QMessageBox::No) {
       if (_splash) {
         _splash->hide();
       }
@@ -546,7 +546,7 @@ void login2::sOptions()
   if (_multipleConnections)
     params.append("dontSaveSettings");
 
-  login2Options newdlg(this, "", TRUE);
+  login2Options newdlg(this, "", true);
   newdlg.set(params);
   if (newdlg.exec() != QDialog::Rejected)
   {

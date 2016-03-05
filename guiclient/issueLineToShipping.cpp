@@ -21,7 +21,7 @@
 #include "distributeInventory.h"
 #include "storedProcErrorLookup.h"
 
-issueLineToShipping::issueLineToShipping(QWidget* parent, const char* name, bool modal, Qt::WFlags fl)
+issueLineToShipping::issueLineToShipping(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
 {
   setupUi(this);
@@ -32,7 +32,7 @@ issueLineToShipping::issueLineToShipping(QWidget* parent, const char* name, bool
   _requireInventory = false;
   _snooze = false;
   _transTS = QDateTime::currentDateTime();
-  _item->setReadOnly(TRUE);
+  _item->setReadOnly(true);
   if(!_metrics->boolean("EnableSOReservations"))
   {
     _qtyReservedLit->hide();
@@ -370,7 +370,7 @@ void issueLineToShipping::populate()
 		"       coitem_qtyord AS qtyordered,"
     "       coitem_qtyshipped AS qtyshipped,"
     "       coitem_qtyreturned AS qtyreturned,"
-    "       coitem_qtyreserved AS qtyreserved,"
+    "       (coitem_qtyreserved / coitem_qty_invuomratio) AS qtyreserved,"
 		"       noNeg(coitem_qtyord - coitem_qtyshipped +"
 		"             coitem_qtyreturned) AS balance "
         "FROM cohead, coitem, itemsite, item, whsinfo, uom "

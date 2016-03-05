@@ -25,7 +25,7 @@
 #include "xmessagebox.h"
 #include "storedProcErrorLookup.h"
 
-reserveSalesOrderItem::reserveSalesOrderItem(QWidget* parent, const char* name, bool modal, Qt::WFlags fl)
+reserveSalesOrderItem::reserveSalesOrderItem(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
 {
   setupUi(this);
@@ -33,7 +33,7 @@ reserveSalesOrderItem::reserveSalesOrderItem(QWidget* parent, const char* name, 
   connect(_save, SIGNAL(clicked()), this, SLOT(sSave()));
   connect(_close, SIGNAL(clicked()), this, SLOT(reject()));
 
-  _item->setReadOnly(TRUE);
+  _item->setReadOnly(true);
 
   _qtyToReserve->setValidator(omfgThis->qtyVal());
 
@@ -238,10 +238,10 @@ void reserveSalesOrderItem::populate()
                 "       coitem_qtyord AS ordered,"
                 "       (coitem_qtyshipped - coitem_qtyreturned) AS shipped,"
                 "       qtyAtShipping(coitem_id) AS atShipping,"
-                "       coitem_qtyreserved AS reserved,"
+                "       (coitem_qtyreserved / coitem_qty_invuomratio) AS reserved,"
                 "       noNeg(coitem_qtyord - coitem_qtyshipped +"
                 "             coitem_qtyreturned - qtyAtShipping(coitem_id) -"
-                "             coitem_qtyreserved) AS balance "
+                "             (coitem_qtyreserved / coitem_qty_invuomratio)) AS balance "
                 "FROM coitem JOIN cohead ON (cohead_id=coitem_cohead_id)"
                 "            JOIN itemsite ON (itemsite_id=coitem_itemsite_id)"
                 "            JOIN item ON (item_id=itemsite_item_id)"
@@ -329,7 +329,7 @@ void reserveSalesOrderItem::sReserveLocation()
     return;
   
   XSqlQuery reserveq;
-  reserveq.prepare("SELECT reserveSoLineQty(:lineitem_id, TRUE, :qty, :itemloc_id) AS result;");
+  reserveq.prepare("SELECT reserveSoLineQty(:lineitem_id, true, :qty, :itemloc_id) AS result;");
   reserveq.bindValue(":lineitem_id", _soitemid);
   reserveq.bindValue(":qty", locreserve);
   reserveq.bindValue(":itemloc_id", _itemloc->id());
@@ -429,7 +429,7 @@ void reserveSalesOrderItem::sBcReserve()
   }
   
   XSqlQuery reserveq;
-  reserveq.prepare("SELECT reserveSoLineQty(:lineitem_id, TRUE, :qty, :itemloc_id) AS result;");
+  reserveq.prepare("SELECT reserveSoLineQty(:lineitem_id, true, :qty, :itemloc_id) AS result;");
   reserveq.bindValue(":lineitem_id", _soitemid);
   reserveq.bindValue(":qty", _bcQty->text().toDouble());
   reserveq.bindValue(":itemloc_id", reserveBc.value("itemloc_id").toInt());

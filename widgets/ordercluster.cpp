@@ -12,6 +12,7 @@
 #include <QSqlError>
 
 #include "ordercluster.h"
+#include "errorReporter.h"
 #include "xsqlquery.h"
 
 #define DEBUG false
@@ -294,7 +295,7 @@ OrderLineEdit::OrderLineEdit(QWidget *pParent, const char *pName) :
   _toPrivs=false;
   _fromPrivs=false;
   _custid = -1;
-  _lock = false;
+  _lockOnSelect = false;
   
   setTitles(tr("Order"), tr("Orders"));
 
@@ -303,7 +304,7 @@ OrderLineEdit::OrderLineEdit(QWidget *pParent, const char *pName) :
   _query = "SELECT orderhead_id AS id, orderhead_number AS number,"
 	   "       orderhead_type AS name, orderhead_status AS description,"
 	   "       orderhead_from, orderhead_to "
-	   "FROM orderhead WHERE (TRUE) ";
+	   "FROM orderhead WHERE (true) ";
 }
 
 OrderLineEdit::~OrderLineEdit()
@@ -325,7 +326,7 @@ void OrderLineEdit::sParse()
 
     if (! _parsed)
     {
-      _parsed = TRUE;
+      _parsed = true;
       QString stripped = text().trimmed().toUpper();
       if (stripped.length() == 0)
       {
@@ -344,7 +345,7 @@ void OrderLineEdit::sParse()
         {
           // Check for other active orders with the same number
           XSqlQuery countQ;
-          countQ.prepare("SELECT COUNT(*) AS count FROM orderhead WHERE (TRUE) " + _numClause +
+          countQ.prepare("SELECT COUNT(*) AS count FROM orderhead WHERE (true) " + _numClause +
                           (_extraClause.isEmpty() || !_strict ? "" : " AND " + _extraClause) +
                           (_hasActive ? _activeClause : "" ) + QString(";"));
           countQ.bindValue(":number", numQ.value("number").toString());
@@ -723,28 +724,20 @@ void OrderLineEdit::setId(const int pId, const QString &pType)
       setAllowedType(pType);
     silentSetId(pId);
     // Attempt to obtain an application lock on the order
-    if (_lock && _id != -1)
+    if (_lockOnSelect && _id != -1)
     {
-      XSqlQuery lock;
-      lock.prepare("SELECT trylock(oid::integer, :id) AS locked "
-                   "FROM pg_class "
-                   "WHERE relname = :table;");
-      lock.bindValue(":id", _id);
+      QString _table;
       if (isPO())
-        lock.bindValue(":table","pohead");
+        _table = "pohead";
       else if (isSO())
-        lock.bindValue(":table","cohead");
+        _table = "cohead";
       else if (isRA())
-        lock.bindValue(":table","rahead");
+        _table = "rahead";
       else if (isTO())
-        lock.bindValue(":table","tohead");
-      lock.exec();
-      lock.first();
-      if (!lock.value("locked").toBool())
+        _table = "tohead";
+
+      if (!_lock.acquire(_table, _id, AppLock::Interactive))
       {
-        QMessageBox::critical(this, tr("Order locked"),
-                              tr("This order is being edited in another window or by "
-                                 "another user.  Please try again later."));
         clear();
         if(!pType.isNull())
           setAllowedTypes(oldTypes);
@@ -791,7 +784,7 @@ void OrderLineEdit::silentSetId(const int pId)
     QString oldExtraClause = _extraClause;
 
     XSqlQuery countQ;
-    countQ.prepare("SELECT COUNT(*) AS count FROM orderhead WHERE (TRUE) " + _idClause +
+    countQ.prepare("SELECT COUNT(*) AS count FROM orderhead WHERE (true) " + _idClause +
 		    (_extraClause.isEmpty() || !_strict ? "" : " AND " + _extraClause) +
 		    QString(";"));
     countQ.bindValue(":id", pId);
@@ -883,28 +876,17 @@ void OrderLineEdit::silentSetId(const int pId)
     _idColName="orderhead_id";
   }
 
-  _parsed = TRUE;
+  _parsed = true;
   emit parsed();
 }
 
 void OrderLineEdit::unlock()
 {
-  if (_lock && _id != -1)
+  if (_lockOnSelect && _id != -1)
   {
-    XSqlQuery lock;
-    lock.prepare("SELECT pg_advisory_unlock(oid::integer, :id) "
-                 "FROM pg_class "
-                 "WHERE relname = :table;");
-    lock.bindValue(":id", _id);
-    if (isPO())
-      lock.bindValue(":table","pohead");
-    else if (isSO())
-      lock.bindValue(":table","cohead");
-    else if (isRA())
-      lock.bindValue(":table","rahead");
-    else if (isTO())
-      lock.bindValue(":table","tohead");
-    lock.exec();
+    if(!_lock.release())
+      ErrorReporter::error(QtCriticalMsg, this, tr("Locking Error"),
+                             _lock.lastError(), __FILE__, __LINE__);
   }
 }
 
