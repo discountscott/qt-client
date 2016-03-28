@@ -960,12 +960,13 @@ void customer::sDeleteShipto()
     int result = delq.value("result").toInt();
     if (result < 0)
     {
-      systemError(this, storedProcErrorLookup("deleteShipTo", result),
-                  __FILE__, __LINE__);
+      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Ship To"),
+                             storedProcErrorLookup("deleteShipTo", result),
+                             __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Deleting Ship To"),
+  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Ship To"),
                                 delq, __FILE__, __LINE__))
     return;
 
@@ -1100,9 +1101,11 @@ void customer::sFillCharacteristicList()
 
 void customer::sPopulateShiptoMenu(QMenu *menuThis)
 {
-  menuThis->addAction(tr("Edit..."),   this, SLOT(sEditShipto()));
+  if (_mode != cView)
+    menuThis->addAction(tr("Edit..."),   this, SLOT(sEditShipto()));
   menuThis->addAction(tr("View..."),   this, SLOT(sViewShipto()));
-  menuThis->addAction(tr("Delete..."), this, SLOT(sDeleteShipto()));
+  if (_mode != cView)
+    menuThis->addAction(tr("Delete..."), this, SLOT(sDeleteShipto()));
 }
 
 void customer::sFillShiptoList()
@@ -1682,7 +1685,7 @@ void customer::sCancel()
   if (_autoSaved)
       QMessageBox::information( this, tr("Customer Saved"),
                            tr("The customer record was automatically "
-                           "saved to the database. The committed changes"
+                           "saved to the database. The committed changes "
                            "will not be cancelled.") );
   close();
 }

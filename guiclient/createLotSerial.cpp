@@ -18,6 +18,7 @@
 
 #include <parameter.h>
 #include <openreports.h>
+#include "errorReporter.h"
 
 createLotSerial::createLotSerial(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl),
@@ -118,9 +119,9 @@ enum SetResponse createLotSerial::set(const ParameterList &pParams)
         _preassigned = true;
         connect(_lotSerial, SIGNAL(newID(int)), this, SLOT(sLotSerialSelected()));
       }
-      else if (preassign.lastError().type() != QSqlError::NoError)
+      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Lot/Serial Information"),
+                                    preassign, __FILE__, __LINE__))
       {
-        systemError(this, preassign.lastError().databaseText(), __FILE__, __LINE__);
         return UndefinedError;
       }
       else if (createet.value("itemsite_lsseq_id").toInt() != -1)
@@ -135,9 +136,9 @@ enum SetResponse createLotSerial::set(const ParameterList &pParams)
           _lotSerial->setAllowNull(true);
           _lotSerial->setText(fetchlsnum.value("lotserial").toString());
         }
-        else if (fetchlsnum.lastError().type() != QSqlError::NoError)
+        else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Lot/Serial Information"),
+                                      fetchlsnum, __FILE__, __LINE__))
         {
-          systemError(this, fetchlsnum.lastError().databaseText(), __FILE__, __LINE__);
           return UndefinedError;
         }
       }
@@ -149,9 +150,9 @@ enum SetResponse createLotSerial::set(const ParameterList &pParams)
                      "WHERE (itemloc_itemsite_id=:itemsite_id);");
         lots.bindValue(":itemsite_id", createet.value("itemsite_id").toInt());
         lots.exec();
-        if (lots.lastError().type() != QSqlError::NoError)
+        if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Lot/Serial Information"),
+                                      lots, __FILE__, __LINE__))
         {
-          systemError(this, lots.lastError().databaseText(), __FILE__, __LINE__);
           return UndefinedError;
         }
         else {
@@ -161,9 +162,9 @@ enum SetResponse createLotSerial::set(const ParameterList &pParams)
         }
       }
     }
-    else if (createet.lastError().type() != QSqlError::NoError)
+    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Lot/Serial Information"),
+                                  createet, __FILE__, __LINE__))
     {
-      systemError(this, createet.lastError().databaseText(), __FILE__, __LINE__);
       return UndefinedError;
     }
   }
@@ -284,7 +285,6 @@ void createLotSerial::clearCharacteristics()
 void createLotSerial::sAssign()
 {
   XSqlQuery createAssign;
-  int  lsid=-1;
   
   if (_lotSerial->currentText().isEmpty())
   {
@@ -381,22 +381,19 @@ void createLotSerial::sAssign()
   if (_serial)
   {
     createAssign.prepare("SELECT COUNT(*) AS count FROM "
-              "(SELECT itemloc_id AS count "
-              "FROM itemloc,itemsite,ls "
-              "WHERE ((itemloc_itemsite_id=:itemsite_id)"
-              "  AND (itemloc_itemsite_id=itemsite_id)"
-              "  AND (itemsite_item_id=ls_item_id)"
-              "  AND (itemloc_ls_id=ls_id)"
-              "  AND (UPPER(ls_number)=UPPER(:lotserial)))"
-              "UNION "
-              "SELECT itemlocdist_id "
-              "FROM itemlocdist,itemsite,ls "
-              "WHERE ((itemlocdist_itemsite_id=:itemsite_id) "
-              "  AND (itemlocdist_itemsite_id=itemsite_id)"
-              "  AND (itemlocdist_ls_id=ls_id)"
-              "  AND (UPPER(ls_number)=UPPER(:lotserial)) "
-              "  AND (itemlocdist_source_type='D'))) as data;");
-    createAssign.bindValue(":itemsite_id", _itemsiteid);
+                         "(SELECT itemloc_id AS count "
+                         "FROM itemsite JOIN itemloc ON (itemloc_itemsite_id=itemsite_id)"
+                         "              JOIN ls ON (ls_id=itemloc_ls_id) "
+                         "WHERE (itemsite_item_id=:item_id)"
+                         "  AND (UPPER(ls_number)=UPPER(:lotserial))"
+                         "UNION "
+                         "SELECT itemlocdist_id "
+                         "FROM itemsite JOIN itemlocdist ON (itemlocdist_itemsite_id=itemsite_id)"
+                         "              JOIN ls ON (ls_id=itemlocdist_ls_id) "
+                         "WHERE (itemsite_item_id=:item_id)"
+                         "  AND (UPPER(ls_number)=UPPER(:lotserial))"
+                         "  AND (itemlocdist_source_type='D')) AS data;");
+    createAssign.bindValue(":item_id", _item->id());
     createAssign.bindValue(":lotserial", _lotSerial->currentText());
     createAssign.exec();
     if (createAssign.first())
@@ -410,9 +407,9 @@ void createLotSerial::sAssign()
         return;
       }
     }
-    else if (createAssign.lastError().type() != QSqlError::NoError)
+    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Lot/Serial Information"),
+                                  createAssign, __FILE__, __LINE__))
     {
-      systemError(this, createAssign.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -435,11 +432,10 @@ void createLotSerial::sAssign()
                                   QMessageBox::Yes | QMessageBox::Default,
                                   QMessageBox::No  | QMessageBox::Escape) == QMessageBox::No)
           return;
-      lsid=createAssign.value("ls_id").toInt();
     }
-    else if (createAssign.lastError().type() != QSqlError::NoError)
+    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Lot/Serial Information"),
+                                  createAssign, __FILE__, __LINE__))
     {
-      systemError(this, createAssign.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -470,9 +466,9 @@ void createLotSerial::sAssign()
     createAssign.bindValue(":warranty", _warranty->date());
   createAssign.bindValue(":itemlocdist_id", _itemlocdistid);
   createAssign.exec();
-  if (createAssign.lastError().type() != QSqlError::NoError)
+  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Lot/Serial Information"),
+                                createAssign, __FILE__, __LINE__))
   {
-    systemError(this, createAssign.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 

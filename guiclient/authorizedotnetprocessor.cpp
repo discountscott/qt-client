@@ -376,6 +376,8 @@ int  AuthorizeDotNetProcessor::doCharge(const int pccardid, const QString &pcvv,
   if (! preforder.isEmpty())
     APPENDFIELD(request, "x_po_num",   preforder);
 
+  APPENDFIELD(request, "x_invoice_num",   pneworder);
+
   QString response;
 
   returnValue = sendViaHTTP(request, response);
@@ -581,7 +583,7 @@ int AuthorizeDotNetProcessor::handleResponse(const QString &presponse, const int
   QString r_hash;
 
   QString status;
-  bool    isCP; // looks like an (unsupported) card-present transaction
+  bool    isCP=false; // looks like an (unsupported) card-present transaction
 
   // TODO: explore using encap here and code from CSV Import to properly split
 

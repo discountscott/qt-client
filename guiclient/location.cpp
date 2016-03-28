@@ -14,6 +14,7 @@
 #include <QMessageBox>
 #include <QValidator>
 #include "itemcluster.h"
+#include "errorReporter.h"
 
 location::location(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -76,12 +77,9 @@ enum SetResponse location::set(const ParameterList &pParams)
       locationet.exec("SELECT NEXTVAL('location_location_id_seq') AS location_id;");
       if (locationet.first())
         _locationid = locationet.value("location_id").toInt();
-      else
+      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Location Information"),
+                                    locationet, __FILE__, __LINE__))
       {
-        systemError(this, tr("A System Error occurred at %1::%2.")
-                          .arg(__FILE__)
-                          .arg(__LINE__) );
-
         return UndefinedError;
       }
     }
@@ -177,7 +175,7 @@ void location::sSave()
   if ( (!_netable->isChecked()) && (_usable->isChecked()) )
   {
     QMessageBox::critical( this, tr("Invalid Status"),
-                          tr( "<p>Non Nettable inventory cannot be Usable inventory." ) );
+                          tr( "<p>Non Netable inventory cannot be Usable inventory." ) );
     _netable->setFocus();
     return;
   }

@@ -139,6 +139,7 @@ enum SetResponse incident::set(const ParameterList &pParams)
         _alarms->setId(_incdtid);
         _recurring->setParent(_incdtid, "INCDT");
         _print->hide();
+        _project->setAllowedStatuses(ProjectLineEdit::Concept |  ProjectLineEdit::InProcess);
       }
       else
       {
@@ -147,6 +148,11 @@ enum SetResponse incident::set(const ParameterList &pParams)
                                    "\n%1" ).arg(incidentet.lastError().text()));
         reject();
       }
+      // Characteristics update incident history so we have to save the incident first
+      // when adding a characteristic in new mode otherwise we get foreign key errors
+      QPushButton *newbutton = _charass->findChild<QPushButton*>("_newCharacteristic");
+      disconnect(newbutton, SIGNAL(clicked()), _charass, SLOT(sNew()));
+      connect(newbutton, SIGNAL(clicked()), this, SLOT(sNewCharacteristic()));
     }
     else if (param.toString() == "edit")
     {
@@ -268,14 +274,15 @@ void incident::sCancel()
       int result = incidentCancel.value("result").toInt();
       if (result < 0)
       {
-        systemError(this, storedProcErrorLookup("releaseNumber", result),
-                    __FILE__, __LINE__);
+        ErrorReporter::error(QtCriticalMsg, this, tr("Error Cancelling Incident"),
+                               storedProcErrorLookup("releaseNumber", result),
+                               __FILE__, __LINE__);
         return;
       }
     }
-    else if (incidentCancel.lastError().type() != QSqlError::NoError)
+    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Cancelling Incident"),
+                                  incidentCancel, __FILE__, __LINE__))
     {
-      systemError(this, incidentCancel.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -287,14 +294,15 @@ void incident::sCancel()
       int result = incidentCancel.value("result").toInt();
       if (result < 0)
       {
-        systemError(this, storedProcErrorLookup("deleteIncident", result),
-                    __FILE__, __LINE__);
+        ErrorReporter::error(QtCriticalMsg, this, tr("Error Cancelling Incident"),
+                               storedProcErrorLookup("deleteIncident", result),
+                               __FILE__, __LINE__);
         return;
       }
     }
-    else if (incidentCancel.lastError().type() != QSqlError::NoError)
+    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Cancelling Incident"),
+                                  incidentCancel, __FILE__, __LINE__))
     {
-      systemError(this, incidentCancel.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -356,7 +364,8 @@ bool incident::save(bool partial)
 
   if (!incidentave.exec("BEGIN"))
   {
-    systemError(this, incidentave.lastError().databaseText(), __FILE__, __LINE__);
+    ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Incident"),
+                         incidentave, __FILE__, __LINE__);
     return false;
   }
 
@@ -432,7 +441,8 @@ bool incident::save(bool partial)
   if(!incidentave.exec() && incidentave.lastError().type() != QSqlError::NoError)
   {
     rollback.exec();
-    systemError(this, incidentave.lastError().databaseText(), __FILE__, __LINE__);
+    ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Incident"),
+                         incidentave, __FILE__, __LINE__);
     return false;
   }
 
@@ -440,7 +450,8 @@ bool incident::save(bool partial)
   if (! _recurring->save(true, cp, &errmsg))
   {
     rollback.exec();
-    systemError(this, errmsg, __FILE__, __LINE__);
+    ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Incident"),
+                         rollback, __FILE__, __LINE__);
     return false;
   }
 
@@ -448,7 +459,8 @@ bool incident::save(bool partial)
   if(incidentave.lastError().type() != QSqlError::NoError)
   {
     rollback.exec();
-    systemError(this, incidentave.lastError().databaseText(), __FILE__, __LINE__);
+    ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Incident"),
+                         incidentave, __FILE__, __LINE__);
     return false;
   }
 
@@ -475,9 +487,9 @@ void incident::sFillHistoryList()
   incidentFillHistoryList.bindValue(":contact", tr("Contact"));
   incidentFillHistoryList.exec();
   _incdthist->populate(incidentFillHistoryList);
-  if (incidentFillHistoryList.lastError().type() != QSqlError::NoError)
+  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Incident History"),
+                                incidentFillHistoryList, __FILE__, __LINE__))
   {
-    systemError(this, incidentFillHistoryList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -577,6 +589,13 @@ void incident::sCRMAcctChanged(const int newid)
   _cntct->setSearchAcct(newid);
 }
 
+void incident::sNewCharacteristic()
+{
+  if (! save(false))
+    return;
+  _charass->sNew();
+}
+
 void incident::sNewTodoItem()
 {
   if (! save(true))
@@ -627,15 +646,17 @@ void incident::sDeleteTodoItem()
     int result = incidentDeleteTodoItem.value("result").toInt();
     if (result < 0)
     {
-      systemError(this, storedProcErrorLookup("deleteTodoItem", result));
+      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting To-Do Item"),
+                             storedProcErrorLookup("deleteTodoItem", result),
+                             __FILE__, __LINE__);
       return;
     }
     else
       sFillTodoList();
     }
-  else if (incidentDeleteTodoItem.lastError().type() != QSqlError::NoError)
+  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting To-Do Item"),
+                                incidentDeleteTodoItem, __FILE__, __LINE__))
   {
-    systemError(this, incidentDeleteTodoItem.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

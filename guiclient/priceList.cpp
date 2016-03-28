@@ -14,6 +14,7 @@
 #include <QVariant>
 
 #include "mqlutil.h"
+#include "errorReporter.h"
 
 priceList::priceList(QWidget* parent, const char * name, Qt::WindowFlags fl)
     : XDialog(parent, name, fl)
@@ -101,7 +102,13 @@ enum SetResponse priceList::set(const ParameterList &pParams)
     _warehouse->setId(param.toInt());
     _warehouse->setEnabled(false);
   }
-    
+
+  param = pParams.value("shipzone_id", &valid);
+  _shipzoneid = (valid) ? param.toInt() : -1;   
+
+  param = pParams.value("saletype_id", &valid);
+  _saletypeid = (valid) ? param.toInt() : -1;
+ 
   param = pParams.value("curr_id", &valid);
   if (valid)
   {
@@ -158,9 +165,9 @@ void priceList::sNewCust()
       _custtypeid = custq.value("custtype_id").toInt();
       _custtypecode = custq.value("custtype_code").toString();
     }
-    else if (custq.lastError().type() != QSqlError::NoError)
+    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Price List Information"),
+                                  custq, __FILE__, __LINE__))
     {
-      systemError(this, custq.lastError().text(), __FILE__, __LINE__);
       return;
     }
   }
@@ -180,9 +187,9 @@ void priceList::sNewShipto()
     {
       _shiptonum = shiptoq.value("shipto_num").toString();
     }
-    else if (shiptoq.lastError().type() != QSqlError::NoError)
+    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Price List Information"),
+                                  shiptoq, __FILE__, __LINE__))
     {
-      systemError(this, shiptoq.lastError().text(), __FILE__, __LINE__);
       return;
     }
   }
@@ -219,9 +226,9 @@ void priceList::sNewItem()
       _iteminvpricerat = itemq.value("iteminvpricerat").toDouble();
       _prodcatid = itemq.value("item_prodcat_id").toInt();
     }
-    else if (itemq.lastError().type() != QSqlError::NoError)
+    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Price List Information"),
+                                  itemq, __FILE__, __LINE__))
     {
-      systemError(this, itemq.lastError().text(), __FILE__, __LINE__);
       return;
     }
   }
@@ -242,7 +249,10 @@ void priceList::sFillList()
                                           errString, &ok);
   if (! ok)
   {
-    systemError(this, errString, __FILE__, __LINE__);
+    ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
+                         tr("%1: %2")
+                         .arg(windowTitle())
+                         .arg(errString),__FILE__,__LINE__);
     return;
   }
 
@@ -253,6 +263,8 @@ void priceList::sFillList()
   pricelistp.append("shipToPattern",    tr("Cust. Ship-To Pattern"));
   pricelistp.append("custType",         tr("Cust. Type"));
   pricelistp.append("custTypePattern",  tr("Cust. Type Pattern"));
+  pricelistp.append("shipZone",         tr("Shipping Zone"));
+  pricelistp.append("saleType",         tr("Sale Type"));
   pricelistp.append("sale",             tr("Sale"));
   pricelistp.append("listPrice",        tr("List Price"));
   pricelistp.append("nominal",          tr("Nominal"));
@@ -263,6 +275,8 @@ void priceList::sFillList()
   pricelistp.append("cust_id",          _cust->id());
   pricelistp.append("custtype_id",      _custtypeid);
   pricelistp.append("custtype_code",    _custtypecode);
+  pricelistp.append("saletype_id",      _saletypeid);
+  pricelistp.append("shipzone_id",        _shipzoneid);
   pricelistp.append("shipto_id",        _shiptoid);
   pricelistp.append("shipto_num",       _shiptonum);
   pricelistp.append("curr_id",          _curr_id);

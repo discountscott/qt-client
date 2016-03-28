@@ -99,6 +99,8 @@
 #include <QTranslator>
 #if QT_VERSION < 0x050000
 #include <QHttp>
+#else
+#include <QUrlQuery>
 #endif
 #include <QUrl>
 
@@ -119,6 +121,9 @@
 #include "scripttoolbox.h"
 #include "xmainwindow.h"
 #include "checkForUpdates.h"
+#include "salesOrderSimple.h"
+#include "userPreferences.h"
+#include "xtNetworkRequestManager.h"
 
 #include "sysLocale.h"
 
@@ -473,24 +478,31 @@ int main(int argc, char *argv[])
       {
         db = metric.value("db").toString();
       }
-
-#if QT_VERSION < 0x050000  // below removed in qt5, needs to be ported
-      QHttp *http = new QHttp();
+#if QT_VERSION >= 0x050000
+      QUrlQuery urlQuery("https://www.xtuple.org/api/regviolation.php?");
+      urlQuery.addQueryItem("key", rkey);
+      urlQuery.addQueryItem("error", checkPassReason);
+      urlQuery.addQueryItem("name", name);
+      urlQuery.addQueryItem("dbname", dbname);
+      urlQuery.addQueryItem("db", db);
+      urlQuery.addQueryItem("cnt", QString::number(cnt));
+      urlQuery.addQueryItem("tot", QString::number(tot));
+      urlQuery.addQueryItem("ver", _Version);
+      QUrl url = urlQuery.query();
+#else
       QUrl url;
-      url.setUrl("https://www.xtuple.org//api/regviolation.php");
+      url.setUrl("https://www.xtuple.org/api/regviolation.php");
       url.addQueryItem("key", QUrl::toPercentEncoding(rkey));
-      url.addQueryItem("error", QUrl::toPercentEncoding(checkPassReason));
-      url.addQueryItem("name", QUrl::toPercentEncoding(name));
-      url.addQueryItem("dbname", QUrl::toPercentEncoding(dbname));
+      url.addQueryItem("error", checkPassReason);
+      url.addQueryItem("name", name);
+      url.addQueryItem("dbname", dbname);
       url.addQueryItem("db", QUrl::toPercentEncoding(db));
       url.addQueryItem("cnt", QString::number(cnt));
       url.addQueryItem("tot", QString::number(tot));
       url.addQueryItem("ver", _Version);
-
-      http->setHost("www.xtuple.org");
-      http->get(url.toString());
-      http->close();
 #endif
+      QMutex wait;
+      xtNetworkRequestManager _networkManager(url, wait);
       if(forced)
         return 0;
 
@@ -756,6 +768,15 @@ int main(int argc, char *argv[])
       return -2;
     }
   }
+  else if (omfgThis->_singleWindow == "salesOrderSimple")
+  {
+    ParameterList params;
+    params.append("mode", "new");
+    
+    salesOrderSimple *newdlg = new salesOrderSimple();
+    newdlg->set(params);
+    omfgThis->handleNewWindow(newdlg);
+  }
 
   // Check for the existance of a base currency, if none, one needs to
   // be selected or created
@@ -776,7 +797,8 @@ int main(int argc, char *argv[])
       }
       else
       {
-        systemError(0, baseCurrency.lastError().databaseText(), __FILE__, __LINE__);
+        ErrorReporter::error(QtCriticalMsg, omfgThis, QObject::tr("Error Retrieving Base Currency Information"),
+                             baseCurrency, __FILE__, __LINE__);
         // need to figure out appropriate return code for this...unusual error
         return -1;
       }
@@ -784,7 +806,8 @@ int main(int argc, char *argv[])
   }
   else
   {
-    systemError(0, baseCurrency.lastError().databaseText(), __FILE__, __LINE__);
+      ErrorReporter::error(QtCriticalMsg, omfgThis, QObject::tr("Error Retrieving Base Currency Information"),
+                           baseCurrency, __FILE__, __LINE__);
     // need to figure out appropriate return code for this...unusual error
     return -1;
   }
@@ -838,6 +861,31 @@ int main(int argc, char *argv[])
                   "You should define the exchange rates for these currencies in 'System | "
                   "Setup | Exchange Rates...' before posting any "
                   "transactions in the system.") );
+
+// Check for presence of password reset requirement and user last reset days
+  XSqlQuery resetCheck("SELECT fetchmetricbool('EnforcePasswordReset') as passreset, "
+                       "       fetchmetricvalue('PasswordResetDays')::TEXT as resetdays, "
+                       "(SELECT current_date - fetchmetricvalue('PasswordResetDays')::INTEGER > "
+                       "(SELECT usrpref_value FROM usrpref WHERE ((usrpref_username = geteffectivextuser()) "
+                       " AND (usrpref_name = 'PasswordResetDate')))::DATE) AS lastreset;");
+  resetCheck.exec();
+  if(resetCheck.first())
+  {
+    if(resetCheck.value("passreset").toBool() && resetCheck.value("lastreset").toBool())
+    {
+      QMessageBox::warning( omfgThis, QObject::tr("New Password Required"),
+        QObject::tr("<p>Your company has a policy of updating passwords every %1 days.  "
+                  "Please change your password before logging out.").arg(resetCheck.value("resetdays").toString()));
+      if (_privileges->check("MaintainPreferencesSelf"))
+      {
+        ParameterList params;
+        params.append("passwordReset");
+        userPreferences newdlg(0, "", true);
+        newdlg.set(params);
+        newdlg.exec();
+      }
+    }
+  }
 
   app.exec();
 
