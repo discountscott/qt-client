@@ -46,7 +46,7 @@ QScriptValue constructQApplication(QScriptContext  *context,
 }
 
 QApplicationProto::QApplicationProto(QObject *parent)
-    : QCoreApplicationProto(parent)
+    : QObject(parent)
 {
 }
 

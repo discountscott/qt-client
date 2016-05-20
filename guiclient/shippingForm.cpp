@@ -13,7 +13,6 @@
 #include <QMessageBox>
 #include <QSqlError>
 #include <QVariant>
-#include "errorReporter.h"
 
 shippingForm::shippingForm(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -94,9 +93,9 @@ void shippingForm::sCheck()
 
       _name->setEnabled(false);
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Shipping Form Information"),
-                                  shippingCheck, __FILE__, __LINE__))
+    else if (shippingCheck.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, shippingCheck.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -128,9 +127,9 @@ void shippingForm::sSave()
     shippingSave.exec("SELECT NEXTVAL('shipform_shipform_id_seq') AS shipform_id;");
     if (shippingSave.first())
       _shipformid = shippingSave.value("shipform_id").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Shipping Form Information"),
-                                  shippingSave, __FILE__, __LINE__))
+    else if (shippingSave.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, shippingSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -149,9 +148,9 @@ void shippingForm::sSave()
   shippingSave.bindValue(":shipform_name", _name->text());
   shippingSave.bindValue(":shipform_report_name", _report->code());
   shippingSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Shipping Form Information"),
-                                shippingSave, __FILE__, __LINE__))
+  if (shippingSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, shippingSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -171,9 +170,9 @@ void shippingForm::populate()
     _name->setText(shippingpopulate.value("shipform_name").toString());
     _report->setCode(shippingpopulate.value("shipform_report_name").toString());
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Shipping Form Information"),
-                                shippingpopulate, __FILE__, __LINE__))
+  else if (shippingpopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, shippingpopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

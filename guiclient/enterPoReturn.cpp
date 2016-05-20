@@ -22,7 +22,6 @@
 #include "enterPoitemReturn.h"
 #include "storedProcErrorLookup.h"
 #include "postPoReturnCreditMemo.h"
-#include "errorReporter.h"
 
 enterPoReturn::enterPoReturn(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -114,9 +113,9 @@ void enterPoReturn::sPost()
                                         tr("&Yes"), tr("&No"), QString::null, 0, 1 ) == 0 )
         createMemo = true;
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting P/O Return"),
-                                enterPost, __FILE__, __LINE__))
+  else if (enterPost.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, enterPost.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -134,11 +133,10 @@ void enterPoReturn::sPost()
   }
   if (0 > saveResult)	// NOT else if
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Data"),
-                         tr("%1: There was an error saving P/O Return Information. "
-                            "Check the database server log for errors.")
-                         .arg(windowTitle()),
-                         __FILE__,__LINE__);
+    systemError(this, tr("<p>There was an error saving this address (%1). "
+			 "Check the database server log for errors.")
+		      .arg(saveResult),
+		__FILE__, __LINE__);
   }
 
   // print while we can still differentiate current from previous returns
@@ -184,17 +182,15 @@ void enterPoReturn::sPost()
     if (result < 0)
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting P/O Return"),
-                             storedProcErrorLookup("postPoReturns", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("postPoReturns", result),
+		  __FILE__, __LINE__);
       return;
     }
   }
   else if (enterPost.lastError().type() != QSqlError::NoError)
   {
     rollback.exec();
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting P/O Return"),
-                         enterPost, __FILE__, __LINE__);
+    systemError(this, enterPost.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -237,7 +233,6 @@ void enterPoReturn::sEnter()
 {
   ParameterList params;
   params.append("poitem_id", _poitem->id());
-  params.append("poreject_rma", _rma->text());
   if(_dropShip->isChecked())
     _dropshipWarn->showMessage(tr("Returns made against Drop Shipped Purchase Orders "
                                   "will not reverse shipment transactions generated "
@@ -276,9 +271,9 @@ void enterPoReturn::sFillList()
       _returnAddr->setId(enterFillList.value("addr_id").toInt());
 	  _dropShip->setChecked(enterFillList.value("pohead_dropship").toBool());
 	}
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving P/O Item Information"),
-                                  enterFillList, __FILE__, __LINE__))
+    else if (enterFillList.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, enterFillList.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -318,9 +313,9 @@ void enterPoReturn::sFillList()
     MetaSQLQuery mql(sql);
     enterFillList = mql.toQuery(params);
     _poitem->populate(enterFillList);
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving P/O Item Information"),
-                                  enterFillList, __FILE__, __LINE__))
+    if (enterFillList.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, enterFillList.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -340,10 +335,9 @@ void enterPoReturn::closeEvent(QCloseEvent *pEvent)
                "                          AND (poitem_pohead_id=:pohead_id) ) ) );" );
     entercloseEvent.bindValue(":pohead_id", _po->id());
     entercloseEvent.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving P/O Return Information"),
-                                  entercloseEvent, __FILE__, __LINE__))
+    if (entercloseEvent.lastError().type() != QSqlError::NoError)
     {
-      return;
+      systemError(this, entercloseEvent.lastError().databaseText(), __FILE__, __LINE__);
     }
   }
 

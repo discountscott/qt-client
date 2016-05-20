@@ -216,7 +216,11 @@ to be bound by its terms.</comment>
     </widget>
    </item>
   </layout>
-  <zorder>_showGroup</zorder>
+  <zorder>_asof</zorder>
+  <zorder>_asofLit</zorder>
+  <zorder>horizontalSpacer_2</zorder>
+  <zorder>_stackedWidget</zorder>
+  <zorder>_stackedWidget</zorder>
   <zorder>_asofLit</zorder>
   <zorder>_asof</zorder>
   <zorder>_stackedWidget</zorder>

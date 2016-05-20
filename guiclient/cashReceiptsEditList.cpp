@@ -143,15 +143,13 @@ void cashReceiptsEditList::sDelete()
     int result = cashDelete.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Cash Receipt Entry"),
-                             storedProcErrorLookup("deleteCashRcpt", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("deleteCashRcpt", result));
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Cash Receipt Entry"),
-                                cashDelete, __FILE__, __LINE__))
+  else if (cashDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, cashDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   sFillList();
@@ -183,9 +181,9 @@ void cashReceiptsEditList::sPost()
   cashPost.exec("SELECT fetchJournalNumber('C/R') AS journalnumber;");
   if (cashPost.first())
     journalNumber = cashPost.value("journalnumber").toInt();
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Cash Receipt Entry"),
-                                cashPost, __FILE__, __LINE__))
+  else if (cashPost.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, cashPost.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -224,17 +222,16 @@ void cashReceiptsEditList::sPost()
       int result = cashPost.value("result").toInt();
       if (result < 0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Cash Receipt Entry"),
-                               storedProcErrorLookup("postCashReceipt", result),
-                               __FILE__, __LINE__);
+        systemError(this, storedProcErrorLookup("postCashReceipt", result),
+                    __FILE__, __LINE__);
         tx.exec("ROLLBACK;");
         return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Cash Receipt Entry"),
-                                  cashPost, __FILE__, __LINE__))
+    else if (cashPost.lastError().type() != QSqlError::NoError)
     {
-      tx.exec("ROLLBACK");
+      systemError(this, cashPost.lastError().databaseText(), __FILE__, __LINE__);
+      tx.exec("ROLLBACK;");
       return;
     }
   }

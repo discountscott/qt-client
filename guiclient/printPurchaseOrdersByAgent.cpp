@@ -18,7 +18,6 @@
 #include <parameter.h>
 
 #include "guiclient.h"
-#include "errorReporter.h"
 
 printPurchaseOrdersByAgent::printPurchaseOrdersByAgent(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -78,9 +77,7 @@ void printPurchaseOrdersByAgent::sPrint()
     if (orReport::beginMultiPrint(printer, userCanceled) == false)
     {
       if(!userCanceled)
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                           tr("%1: Could not initialize printing system "
-                              "for multiple reports. ").arg(windowTitle()),__FILE__,__LINE__);
+        systemError(this, tr("Could not initialize printing system for multiple reports."));
       return;
     }
 
@@ -124,11 +121,11 @@ void printPurchaseOrdersByAgent::sPrint()
       }
       markprinted.bindValue(":pohead_id", pohead.value("pohead_id").toInt());
       markprinted.exec();
-      if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Printing Purchase Order"),
-                                    markprinted, __FILE__, __LINE__))
+      if (markprinted.lastError().type() != QSqlError::NoError)
       {
-        orReport::endMultiPrint(printer);
-        return;
+	systemError(this, markprinted.lastError().databaseText(), __FILE__, __LINE__);
+	orReport::endMultiPrint(printer);
+	return;
       }
 
       emit finishedPrinting(pohead.value("pohead_id").toInt());
@@ -136,9 +133,9 @@ void printPurchaseOrdersByAgent::sPrint()
     while (pohead.next());
     orReport::endMultiPrint(printer);
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Printing Purchase Order"),
-                                pohead, __FILE__, __LINE__))
+  else if (pohead.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, pohead.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   else

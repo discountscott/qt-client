@@ -16,8 +16,6 @@
 
 #include "absoluteCalendarItem.h"
 #include "relativeCalendarItem.h"
-#include "errorReporter.h"
-#include "guiErrorCheck.h"
 
 static const char *originTypes[] = { "D", "E", "W", "X", "M", "N", "L", "Y", "Z" };
 
@@ -85,9 +83,9 @@ enum SetResponse calendar::set(const ParameterList &pParams)
       calendaret.exec("SELECT NEXTVAL('calhead_calhead_id_seq') AS _calhead_id;");
       if (calendaret.first())
         _calheadid = calendaret.value("_calhead_id").toInt();
-      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Creating New Calendar"),
-                                    calendaret, __FILE__, __LINE__))
+      else if (calendaret.lastError().type() != QSqlError::NoError)
       {
+        systemError(this, calendaret.lastError().databaseText(), __FILE__, __LINE__);
         return UndefinedError;
       }
     }
@@ -106,20 +104,20 @@ enum SetResponse calendar::set(const ParameterList &pParams)
 void calendar::sSave()
 {
   XSqlQuery calendarSave;
-
-  QList<GuiErrorCheck> errors;
-  errors << GuiErrorCheck(_name->text().trimmed().isEmpty(), _name,
-                          tr("You must enter a valid Calendar Name."))
-    ;
-  if (GuiErrorCheck::reportErrors(this, tr("Cannot Save Calendar"), errors))
+  if(_name->text().length() == 0)
+  {
+    QMessageBox::critical(this, tr("Calendar Name Required"),
+      tr("You must enter a Calendar Name to continue.") );
+    _name->setFocus();
     return;
+  }
 
   calendarSave.prepare("SELECT calhead_id"
             "  FROM calhead"
             " WHERE((calhead_id != :calhead_id)"
             "   AND (calhead_name=:calhead_name))");
   calendarSave.bindValue(":calhead_id",       _calheadid);
-  calendarSave.bindValue(":calhead_name",   _name->text().trimmed());
+  calendarSave.bindValue(":calhead_name",   _name->text());
   calendarSave.exec();
   if(calendarSave.first())
   {
@@ -155,13 +153,13 @@ void calendar::sSave()
   }
 
   calendarSave.bindValue(":calhead_id", _calheadid);
-  calendarSave.bindValue(":calhead_name", _name->text().trimmed());
+  calendarSave.bindValue(":calhead_name", _name->text());
   calendarSave.bindValue(":calhead_descrip", _descrip->text());
   calendarSave.bindValue(":calhead_origin", originTypes[_origin->currentIndex()]);
   calendarSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Calendar"),
-                                calendarSave, __FILE__, __LINE__))
+  if (calendarSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, calendarSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -231,9 +229,9 @@ void calendar::sDelete()
 
   calendarDelete.bindValue(":xcalitem_id", _calitem->id());
   calendarDelete.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Calendar Item"),
-                                calendarDelete, __FILE__, __LINE__))
+  if (calendarDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, calendarDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -301,9 +299,9 @@ void calendar::sFillList()
   calendarFillList.bindValue(":calhead_id", _calheadid);
   calendarFillList.exec();
   _calitem->populate(calendarFillList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Calendar Information"),
-                                calendarFillList, __FILE__, __LINE__))
+  if (calendarFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, calendarFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -341,9 +339,9 @@ void calendar::populate()
 
     sFillList();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Calendar Information"),
-                                calendarpopulate, __FILE__, __LINE__))
+  else if (calendarpopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, calendarpopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

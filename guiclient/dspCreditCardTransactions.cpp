@@ -21,7 +21,6 @@
 #include "creditcardprocessor.h"
 #include "storedProcErrorLookup.h"
 #include "xtreewidget.h"
-#include "errorReporter.h"
 
 dspCreditCardTransactions::dspCreditCardTransactions(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -90,6 +89,7 @@ void dspCreditCardTransactions::sFillList()
 {
   XSqlQuery dspFillList;
   _CCAmount->clear();
+  
   MetaSQLQuery mql = mqlLoad("ccpayments", "list");
   ParameterList params;
   _customerSelector->appendValue(params);
@@ -148,8 +148,7 @@ void dspCreditCardTransactions::sgetCCAmount()
       return;
     }
     else if (dspgetCCAmount.lastError().type() != QSqlError::NoError)
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Credit Card Information"),
-                         dspgetCCAmount, __FILE__, __LINE__);
+      systemError(this, dspgetCCAmount.lastError().databaseText(), __FILE__, __LINE__);
   }
   _postPreauth->setEnabled(false);
   _voidPreauth->setEnabled(false);

@@ -22,7 +22,6 @@
 #include "selectBillingQty.h"
 #include "storedProcErrorLookup.h"
 #include "taxBreakdown.h"
-#include "errorReporter.h"
 
 selectOrderForBilling::selectOrderForBilling(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -226,10 +225,10 @@ void selectOrderForBilling::sSave()
     selectSave.bindValue(":cobmisc_misc_descrip", _miscChargeDescription->text().trimmed());
     selectSave.bindValue(":cobmisc_curr_id",	_custCurrency->id());
     selectSave.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Selected Orders For Billing"),
-                                  selectSave, __FILE__, __LINE__))
+    if (selectSave.lastError().type() != QSqlError::NoError)
     {
-      return;
+	systemError(this, selectSave.lastError().databaseText(), __FILE__, __LINE__);
+	return;
     }
   }
 
@@ -250,7 +249,7 @@ void selectOrderForBilling::sSoList()
   params.append("sohead_id", _so->id());
 
   if (_showClosed->isChecked())
-    params.append("soType", (cSoOpen | cSoClosed));
+    params.append("soType", (cSoOpen || cSoClosed));
   else
     params.append("soType", cSoOpen);
 
@@ -275,15 +274,14 @@ void selectOrderForBilling::sPopulate(int pSoheadid)
       _cobmiscid = selectPopulate.value("cobmisc_id").toInt();
       if (_cobmiscid < 0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sales Order Information"),
-                               storedProcErrorLookup("createBillingHeader", _cobmiscid),
-                               __FILE__, __LINE__);
-        return;
+	systemError(this, storedProcErrorLookup("createBillingHeader", _cobmiscid),
+		    __FILE__, __LINE__);
+	return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sales Order Information"),
-                                  selectPopulate, __FILE__, __LINE__))
+    else if (selectPopulate.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, selectPopulate.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -346,9 +344,9 @@ void selectOrderForBilling::sPopulate(int pSoheadid)
         _freight->clear();
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Billing Selection Information"),
-                                  selectPopulate, __FILE__, __LINE__))
+    else if (selectPopulate.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, selectPopulate.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -406,15 +404,14 @@ void selectOrderForBilling::sSelectBalance()
     int result = selectSelectBalance.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Billing Information"),
-                             storedProcErrorLookup("selectBalanceForBilling", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("selectBalanceForBilling", result),
+		  __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Billing Information"),
-                                selectSelectBalance, __FILE__, __LINE__))
+  else if (selectSelectBalance.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, selectSelectBalance.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -434,9 +431,9 @@ void selectOrderForBilling::sCalculateTax()
   taxq.exec();
   if (taxq.first())
     _salesTax->setLocalValue(taxq.value("tax").toDouble());
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Tax Information"),
-                                taxq, __FILE__, __LINE__))
+  else if (taxq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, taxq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   // changing _tax fires sCalculateTotal()
@@ -523,8 +520,7 @@ void selectOrderForBilling::sFillList()
     else
     {
       if (selectFillList.lastError().type() != QSqlError::NoError)
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Billing Information"),
-                           selectFillList, __FILE__, __LINE__);
+	systemError(this, selectFillList.lastError().databaseText(), __FILE__, __LINE__);
       _subtotal->clear();
     }
 
@@ -550,9 +546,9 @@ void selectOrderForBilling::sHandleShipchrg(int pShipchrgid)
       _freight->clear();
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Shipping Charge Information"),
-                                query, __FILE__, __LINE__))
+  else if (query.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, query.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -570,9 +566,9 @@ void selectOrderForBilling::sTaxDetail()
   taxq.bindValue(":cobmisc_id",	_cobmiscid);
   taxq.bindValue(":invcdate",   _invoiceDate->date());
   taxq.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Updating Tax Information"),
-                                taxq, __FILE__, __LINE__))
+  if (taxq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, taxq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -599,13 +595,11 @@ void selectOrderForBilling::closeEvent(QCloseEvent * pEvent)
   {
     int result = selectcloseEvent.value("result").toInt();
     if (result < -2) // don't bother the user with -1:posted or -2:has-lines
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Releasing Unused Billing Header"),
-                             storedProcErrorLookup("releaseUnusedBillingHeader", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("releaseUnusedBillingHeader", result),
+		  __FILE__, __LINE__);
   }
   else if (selectcloseEvent.lastError().type() != QSqlError::NoError)
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Releasing Unused Billing Header"),
-                       selectcloseEvent, __FILE__, __LINE__);
+    systemError(this, selectcloseEvent.lastError().databaseText(), __FILE__, __LINE__);
 
   XWidget::closeEvent(pEvent);
 }
@@ -623,9 +617,9 @@ void selectOrderForBilling::sTaxZoneChanged()
     taxq.bindValue(":cobmisc_id", _cobmiscid);
     taxq.bindValue(":freight", _freight->localValue());
     taxq.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Updating Tax Information"),
-                                  taxq, __FILE__, __LINE__))
+    if (taxq.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, taxq.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
     _taxzoneidCache = _taxZone->id();
@@ -644,9 +638,9 @@ void selectOrderForBilling::sFreightChanged()
     taxq.bindValue(":cobmisc_id", _cobmiscid);
     taxq.bindValue(":freight", _freight->localValue());
     taxq.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Updating Freight Information"),
-                                          taxq, __FILE__, __LINE__))
+    if (taxq.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, taxq.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
     _freightCache = _freight->localValue();

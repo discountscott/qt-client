@@ -17,7 +17,6 @@
 #include "empGroup.h"
 #include "guiclient.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 empGroups::empGroups(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -68,15 +67,14 @@ void empGroups::sDelete()
     int result = empDelete.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Employee Group"),
-                             storedProcErrorLookup("deleteEmpgrp", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("deleteEmpgrp", result),
+                  __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Employee Group"),
-                                empDelete, __FILE__, __LINE__))
+  else if (empDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, empDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -123,9 +121,9 @@ void empGroups::sFillList()
   empFillList.prepare("SELECT * FROM empgrp ORDER BY empgrp_name;" );
   empFillList.exec();
   _empgrp->populate(empFillList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Employee Group Information"),
-                                empFillList, __FILE__, __LINE__))
+  if (empFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, empFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

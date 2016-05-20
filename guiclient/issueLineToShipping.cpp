@@ -20,7 +20,6 @@
 #include "xmessagebox.h"
 #include "distributeInventory.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 issueLineToShipping::issueLineToShipping(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -171,19 +170,18 @@ void issueLineToShipping::sIssue()
         MetaSQLQuery errm(errs);
         issueIssue = errm.toQuery(errp);
         if (! issueIssue.first() && issueIssue.lastError().type() != QSqlError::NoError)
-            ErrorReporter::error(QtCriticalMsg, this, tr("Error Issuing Item"),
-                                 issueIssue, __FILE__, __LINE__);
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Issuing Item"),
-                                 storedProcErrorLookup("sufficientInventoryToShipItem", result)
-                                 .arg(issueIssue.value("item_number").toString())
-                                 .arg(issueIssue.value("warehous_code").toString()),
-                                 __FILE__, __LINE__);
+            systemError(this, issueIssue.lastError().databaseText(), __FILE__, __LINE__);
+        systemError(this,
+              storedProcErrorLookup("sufficientInventoryToShipItem",
+                  result)
+              .arg(issueIssue.value("item_number").toString())
+              .arg(issueIssue.value("warehous_code").toString()), __FILE__, __LINE__);
         return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Issuing Item"),
-                                  issueIssue, __FILE__, __LINE__))
+    else if (issueIssue.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, issueIssue.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -228,9 +226,9 @@ void issueLineToShipping::sIssue()
         tr("Yes"), tr("No"), _snooze, 0, 1) == 1)
       return;
   }
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Issuing Item"),
-                                issueIssue, __FILE__, __LINE__))
+  if (issueIssue.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, issueIssue.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -259,9 +257,8 @@ void issueLineToShipping::sIssue()
       if (itemlocSeries < 0)
       {
         rollback.exec();
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Production"),
-                               storedProcErrorLookup("postProduction", itemlocSeries),
-                               __FILE__, __LINE__);
+        systemError(this, storedProcErrorLookup("postProduction", itemlocSeries),
+                    __FILE__, __LINE__);
         return;
       }
       else if (distributeInventory::SeriesAdjust(itemlocSeries, this) == XDialog::Rejected)
@@ -283,9 +280,8 @@ void issueLineToShipping::sIssue()
       else
       {
         rollback.exec();
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                             tr("Inventory history not found")
-                             .arg(windowTitle()),__FILE__,__LINE__);
+        systemError(this, tr("Inventory history not found"),
+                    __FILE__, __LINE__);
         return;
       }
     }
@@ -307,9 +303,8 @@ void issueLineToShipping::sIssue()
     if (result < 0)
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Issuing Item"),
-                             storedProcErrorLookup("issueToShipping", result),
-                             __FILE__, __LINE__);
+      systemError( this, storedProcErrorLookup("issueToShipping", result),
+		  __FILE__, __LINE__);
       return;
     }
     else
@@ -341,8 +336,7 @@ void issueLineToShipping::sIssue()
         if (lsdetail.lastError().type() != QSqlError::NoError)
         {
           rollback.exec();
-          ErrorReporter::error(QtCriticalMsg, this, tr("Error Issuing Item"),
-                               lsdetail, __FILE__, __LINE__);
+          systemError(this, lsdetail.lastError().databaseText(), __FILE__, __LINE__);
           return;
         }
 	  }
@@ -354,8 +348,7 @@ void issueLineToShipping::sIssue()
   else if (issue.lastError().type() != QSqlError::NoError)
   {
     rollback.exec();
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Issuing Item"),
-                         issue, __FILE__, __LINE__);
+    systemError(this, issue.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -420,9 +413,9 @@ void issueLineToShipping::populate()
     _qtyReserved->setDouble(itemq.value("qtyreserved").toDouble());
     _balance->setDouble(itemq.value("balance").toDouble());
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Information"),
-                                itemq, __FILE__, __LINE__))
+  else if (itemq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, itemq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -448,16 +441,11 @@ void issueLineToShipping::populate()
     _shipment->setId(shipq.value("misc_id").toInt());
     _qtyAtShip->setDouble(shipq.value("qtyatship").toDouble());
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Information"),
-                                shipq, __FILE__, __LINE__))
+  else if (shipq.lastError().type() != QSqlError::NoError)
   {
+    systemError( this, shipq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
-  
-  if (_item->isFractional())
-    _qtyToIssue->setValidator(omfgThis->transQtyVal());
-  else
-    _qtyToIssue->setValidator(new QIntValidator(this));
 
   if (_qtyAtShip->toDouble() == 0.0)
   {
@@ -466,4 +454,9 @@ void issueLineToShipping::populate()
     else
       _qtyToIssue->setDouble(itemq.value("balance").toDouble());
   }
+
+  if (_item->isFractional())
+    _qtyToIssue->setValidator(omfgThis->transQtyVal());
+  else
+    _qtyToIssue->setValidator(new QIntValidator(this));
 }

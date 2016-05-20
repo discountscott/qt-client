@@ -13,7 +13,6 @@
 #include <QMessageBox>
 #include <QSqlError>
 #include <QVariant>
-#include "errorReporter.h"
 
 subaccount::subaccount(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -99,9 +98,9 @@ void subaccount::sSave()
     subaccountSave.exec("SELECT NEXTVAL('subaccnt_subaccnt_id_seq') AS subaccnt_id;");
     if (subaccountSave.first())
       _subaccntid = subaccountSave.value("subaccnt_id").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sub Account Information"),
-                                  subaccountSave, __FILE__, __LINE__))
+    else if (subaccountSave.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, subaccountSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
     
@@ -136,9 +135,9 @@ void subaccount::sSave()
   subaccountSave.bindValue(":subaccnt_number", _number->text());
   subaccountSave.bindValue(":subaccnt_descrip", _descrip->toPlainText());
   subaccountSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Sub Account Information"),
-                                subaccountSave, __FILE__, __LINE__))
+  if (subaccountSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, subaccountSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   

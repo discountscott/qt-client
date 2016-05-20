@@ -25,7 +25,7 @@ class CrmaccountMergePurgePage : public QWizardPage, public Ui::crmaccountMergeP
     virtual void initializePage();
 
   signals:
-    void mergeSetChanged();
+    virtual void mergeSetChanged();
 
   protected slots:
     virtual void sDelete();

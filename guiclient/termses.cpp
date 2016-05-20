@@ -18,7 +18,6 @@
 #include <openreports.h>
 
 #include "terms.h"
-#include "errorReporter.h"
 
 termses::termses(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -97,9 +96,9 @@ void termses::sDelete()
                               "you may delete the selected Terms Code." ) );
     return;
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Customer Information"),
-                                termsesDelete, __FILE__, __LINE__))
+  else if (termsesDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, termsesDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -117,9 +116,9 @@ void termses::sDelete()
                               "may delete the selected Terms Code." ) );
     return;
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Vendor Information"),
-                                termsesDelete, __FILE__, __LINE__))
+  else if (termsesDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, termsesDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 

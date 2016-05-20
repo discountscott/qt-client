@@ -216,7 +216,6 @@ void XComboBox::init()
   insertEditor(CustomerGroups,"customerGroups","MaintainCustomerGroups");
   insertEditor(CustomerTypes,"customerTypes","MaintainCustomerTypes");
   insertEditor(EmployeeCommentTypes,"commentTypes","MaintainCommentTypes");
-  insertEditor(ExchangeRateCommentTypes,"commentTypes","MaintainCommentTypes");
   insertEditor(ExpenseCategories,"expenseCategories","MaintainCustomerTypes");
   insertEditor(FinancialLayouts,"financialLayouts","MaintainFinancialLayouts");
   insertEditor(FiscalYears,"accountingYearPeriods","MaintainAccountingPeriods");
@@ -763,14 +762,6 @@ void XComboBox::setType(XComboBoxTypes pType)
                   "FROM cmnttype JOIN cmnttypesource ON (cmnttypesource_cmnttype_id=cmnttype_id)"
                   "              JOIN source ON (source_id=cmnttypesource_source_id) "
                   "WHERE (source_name='EMP')"
-                  "ORDER BY cmnttype_order, cmnttype_name;" );
-      break;
-
-    case ExchangeRateCommentTypes:
-      query.exec( "SELECT cmnttype_id, cmnttype_name, cmnttype_name "
-                  "FROM cmnttype JOIN cmnttypesource ON (cmnttypesource_cmnttype_id=cmnttype_id)"
-                  "              JOIN source ON (source_id=cmnttypesource_source_id) "
-                  "WHERE (source_name='FX')"
                   "ORDER BY cmnttype_order, cmnttype_name;" );
       break;
 
@@ -1596,15 +1587,6 @@ void XComboBox::mousePressEvent(QMouseEvent *event)
   emit clicked();
 
   QComboBox::mousePressEvent(event);
-}
-
-void XComboBox::wheelEvent(QWheelEvent *event)
-{
-  if (_x_preferences)
-    if (_x_preferences->boolean("DisableXComboBoxWheelEvent"))
-      return;
-
-  QComboBox::wheelEvent(event);
 }
 
 void XComboBox::showPopup()

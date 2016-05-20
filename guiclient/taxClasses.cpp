@@ -18,7 +18,6 @@
 #include <openreports.h>
 #include "taxClass.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 /*
  *  Constructs a taxClasses as a child of 'parent', with the
@@ -91,16 +90,14 @@ void taxClasses::sDelete()
     int returnVal = taxDelete.value("result").toInt();
     if (returnVal < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Tax Class Information"),
-                             storedProcErrorLookup("deleteTaxClass", returnVal),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("deleteTaxClass", returnVal), __FILE__, __LINE__);
       return;
     }
 	sFillList(-1);
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Tax Class Information"),
-                                taxDelete, __FILE__, __LINE__))
+  else if (taxDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, taxDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

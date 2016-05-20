@@ -197,7 +197,8 @@ void locations::sFillList()
     params.append("zone_id", _zone->id());
 
   XSqlQuery locationsFillList = mql.toQuery(params);
-  _location->populate(locationsFillList);
+  if (locationsFillList.first())
+    _location->populate(locationsFillList);
 }
 
 void locations::updateZoneList()
@@ -216,6 +217,7 @@ void locations::updateZoneList()
     params.append("warehous_id", _warehouse->id());
 
   XSqlQuery zoneFillList = mql.toQuery(params);
-  _zone->populate(zoneFillList);
+  if (zoneFillList.first())
+    _zone->populate(zoneFillList);
 }
 

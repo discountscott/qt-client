@@ -38,7 +38,6 @@ dspSlowMovingInventoryByClassCode::dspSlowMovingInventoryByClassCode(QWidget* pa
   _costsGroupInt = new QButtonGroup(this);
   _costsGroupInt->addButton(_useStandardCosts);
   _costsGroupInt->addButton(_useActualCosts);
-  _costsGroupInt->addButton(_usePostedCosts);
 
   connect(_showValue, SIGNAL(toggled(bool)), this, SLOT(sHandleValue(bool)));
 
@@ -83,10 +82,9 @@ bool dspSlowMovingInventoryByClassCode::setParams(ParameterList & params)
 
   if (_useStandardCosts->isChecked())
     params.append("useStandardCosts");
-  else if (_useActualCosts->isChecked())
+
+  if (_useActualCosts->isChecked())
     params.append("useActualCosts");
-  else if (_usePostedCosts->isChecked())
-    params.append("usePostedCosts");
 
   return true;
 }

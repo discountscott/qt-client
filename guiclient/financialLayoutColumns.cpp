@@ -17,7 +17,6 @@
 
 #include <openreports.h>
 #include <reporthandler.h>
-#include "errorReporter.h"
 
 financialLayoutColumns::financialLayoutColumns(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -135,9 +134,9 @@ void financialLayoutColumns::sSave()
     financialSave.exec("SELECT NEXTVAL('flcol_flcol_id_seq') AS flcol_id;");
     if (financialSave.first())
       _flcolid = financialSave.value("flcol_id").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Financial Column Layout Information"),
-                                  financialSave, __FILE__, __LINE__))
+    else if (financialSave.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, financialSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
       
@@ -214,9 +213,9 @@ void financialLayoutColumns::sSave()
   }
     
   financialSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Financial Column Layout Information"),
-                                financialSave, __FILE__, __LINE__))
+  if (financialSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, financialSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -270,9 +269,9 @@ void financialLayoutColumns::populate()
     _budgetdiff->setChecked(financialpopulate.value("flcol_budgetdiff").toBool());
     _budgetdiffprcnt->setChecked(financialpopulate.value("flcol_budgetdiffprcnt").toBool());  
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Financial Column Layout Information"),
-                                financialpopulate, __FILE__, __LINE__))
+  else if (financialpopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, financialpopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

@@ -14,7 +14,6 @@
 #include <QSqlError>
 
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 resetQOHBalances::resetQOHBalances(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -78,15 +77,14 @@ void resetQOHBalances::sReset()
     int result = resetReset.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Resetting QOH Balance"),
-                             storedProcErrorLookup("resetQOHBalance", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("resetQOHBalance", result),
+                  __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Resetting QOH Balance"),
-                                resetReset, __FILE__, __LINE__))
+  else if (resetReset.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, resetReset.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 

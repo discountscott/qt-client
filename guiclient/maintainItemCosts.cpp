@@ -21,7 +21,6 @@
 #include "dspItemCostDetail.h"
 #include "mqlutil.h"
 #include "itemCost.h"
-#include "errorReporter.h"
 
 maintainItemCosts::maintainItemCosts(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -55,7 +54,7 @@ maintainItemCosts::maintainItemCosts(QWidget* parent, const char* name, Qt::Wind
     if (_privileges->check("CreateCosts"))
     {
       connect(_item, SIGNAL(valid(bool)), _new, SLOT(setEnabled(bool)));
-      _new->setEnabled(false);  //initially disabled until item entered
+      _new->setEnabled(true);
     }
 }
 
@@ -200,8 +199,7 @@ void maintainItemCosts::sPost()
   maintainPost.bindValue(":item_id", _itemcost->id());
   maintainPost.exec();
   if (maintainPost.lastError().type() != QSqlError::NoError)
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Cost Information"),
-                       maintainPost, __FILE__, __LINE__);
+      systemError(this, maintainPost.lastError().databaseText(), __FILE__, __LINE__);
 
   sFillList();
 }
@@ -217,9 +215,9 @@ void maintainItemCosts::sDelete()
   maintainDelete.exec();
   if (maintainDelete.first())
     stdCost = maintainDelete.value("itemcost_stdcost").toDouble();
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Cost Information"),
-                                maintainDelete, __FILE__, __LINE__))
+  else if (maintainDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, maintainDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -244,8 +242,7 @@ void maintainItemCosts::sDelete()
   maintainDelete.bindValue(":itemcost_id", _itemcost->id());
   maintainDelete.exec();
   if (maintainDelete.lastError().type() != QSqlError::NoError)
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Cost Information"),
-                                maintainDelete, __FILE__, __LINE__);
+    systemError(this, maintainDelete.lastError().databaseText(), __FILE__, __LINE__);
 
   sFillList();
 }
@@ -265,18 +262,13 @@ void maintainItemCosts::sEnterActualCost()
 
 void maintainItemCosts::sCreateUserCost()
 {
-  if (_item->isValid()) {
-    ParameterList params;
-    params.append("item_id", _item->id());
-    params.append("mode", "new");
+  ParameterList params;
+  params.append("item_id", _item->id());
+  params.append("mode", "new");
 
-    itemCost newdlg(this, "", true);
-    if (newdlg.set(params) == NoError && newdlg.exec())
-      sFillList();
-  } else {
-    QMessageBox::warning(this, tr("Missing or Invalid Item Number"),
-                           tr("Item Number Required"));
-  }
+  itemCost newdlg(this, "", true);
+  if (newdlg.set(params) == NoError && newdlg.exec())
+    sFillList();
 }
 
 void maintainItemCosts::sNew()
@@ -356,14 +348,11 @@ void maintainItemCosts::sFillList()
 			    baseKnown ? formatCost(actualCost) : tr("?????"),
 			    convert.value("currConcat"));
     else if (convert.lastError().type() != QSqlError::NoError)
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Cost Information"),
-                                convert, __FILE__, __LINE__);
+	systemError(this, convert.lastError().databaseText(), __FILE__, __LINE__);
 
   }
-  else {
+  else
     _itemcost->clear();
-    _new->setEnabled(false);
-  }
 }
 
 void maintainItemCosts::sSelectionChanged()

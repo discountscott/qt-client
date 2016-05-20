@@ -366,7 +366,6 @@ to be bound by its terms.</comment>
    <class>CurrCluster</class>
    <extends>CurrDisplay</extends>
    <header>currcluster.h</header>
-   <container>1</container>
   </customwidget>
   <customwidget>
    <class>CurrDisplay</class>
@@ -404,7 +403,6 @@ to be bound by its terms.</comment>
    <class>XLineEdit</class>
    <extends>QLineEdit</extends>
    <header>xlineedit.h</header>
-   <container>1</container>
   </customwidget>
  </customwidgets>
  <tabstops>

@@ -16,7 +16,6 @@
 #include <QVariant>
 
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 changeWoQty::changeWoQty(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -122,9 +121,9 @@ void changeWoQty::sChangeQty()
           newQty = changeChangeQty.value("qty").toDouble();
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Changing Quantity"),
-                                  changeChangeQty, __FILE__, __LINE__))
+    else if (changeChangeQty.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, changeChangeQty.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -133,11 +132,6 @@ void changeWoQty::sChangeQty()
   changeChangeQty.bindValue(":wo_id", _wo->id());
   changeChangeQty.bindValue(":qty", newQty);
   changeChangeQty.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Change Work Order Quantity"),
-                           changeChangeQty, __FILE__, __LINE__))
-  {
-    return;
-  }
 
   if (_postComment->isChecked())
   {
@@ -151,15 +145,14 @@ void changeWoQty::sChangeQty()
       int result = changeChangeQty.value("result").toInt();
       if (result < 0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Comment11"),
-                               storedProcErrorLookup("postComment", result),
-                               __FILE__, __LINE__);
+        systemError(this, storedProcErrorLookup("postComment", result),
+                    __FILE__, __LINE__);
         return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Comment"),
-                                  changeChangeQty, __FILE__, __LINE__))
+    else if (changeChangeQty.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, changeChangeQty.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }

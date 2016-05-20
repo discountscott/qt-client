@@ -73,9 +73,6 @@ enum SetResponse dspInventoryLocator::set(const ParameterList &pParams)
   if (valid)
     _item->setItemsiteid(param.toInt());
 
-  if (pParams.inList("run"))
-    sFillList();
-
   return NoError;
 }
 

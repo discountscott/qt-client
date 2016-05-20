@@ -46,8 +46,6 @@ public slots:
     virtual void sPopulatePoInfo();
     virtual void sPopulateDistributed();
     virtual void sPopulateBalanceDue();
-    virtual void sCalculateTax();
-    virtual void sTaxDetail();
     virtual void populateNumber();
     virtual void populate();
     virtual void clear();
@@ -55,19 +53,22 @@ public slots:
     virtual void sPopulateDistDate();
     virtual void sPopulateDueDate();
     virtual void sView();
-    virtual bool saveDetail();
+    virtual void saveDetail();
 
 protected:
     virtual void keyPressEvent( QKeyEvent * e );
 
 protected slots:
     virtual void languageChange();
+
     virtual void sPopulateMenu( QMenu * pMenu );
+
 
 private:
     int _vendid;
     int _voheadid;
     int _mode;
+
 };
 
 #endif // VOUCHER_H

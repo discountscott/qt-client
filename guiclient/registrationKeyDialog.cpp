@@ -16,7 +16,6 @@
 registrationKeyDialog::registrationKeyDialog(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
   : QDialog(parent, modal ? (fl | Qt::Dialog) : fl)
 {
-  Q_UNUSED(name);
   setupUi(this);
 
   // signals and slots connections

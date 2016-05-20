@@ -106,9 +106,9 @@ enum SetResponse itemCost::set(const ParameterList &pParams)
                        QDate::currentDate(),
                        false);
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Information"),
-                                  itemet, __FILE__, __LINE__))
+    else if (itemet.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, itemet.lastError().databaseText(), __FILE__, __LINE__);
       return UndefinedError;
     }
   }
@@ -144,9 +144,9 @@ enum SetResponse itemCost::set(const ParameterList &pParams)
 		       QDate::currentDate(),
 		       false);
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Information"),
-                                  itemet, __FILE__, __LINE__))
+    else if (itemet.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, itemet.lastError().databaseText(), __FILE__, __LINE__);
       return UndefinedError;
     }
   }
@@ -252,17 +252,16 @@ void itemCost::sSave()
         int result = itemSave.value("result").toInt();
         if (result < 0)
         {
-          ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Information"),
-                                 storedProcErrorLookup("postCost", result),
-                                 __FILE__, __LINE__);
+          systemError(this, storedProcErrorLookup("postCost", result),
+                      __FILE__, __LINE__);
           return;
         }
       }
     }
 
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Item Costing Information"),
-                                  itemSave, __FILE__, __LINE__))
+    if (itemSave.lastError().type() != QSqlError::NoError)  // if EITHER itemSave.exec() failed
     {
+      systemError(this, itemSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -312,9 +311,9 @@ void itemCost::sSave()
       itemSave.exec();
     }
 
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Information"),  // if EITHER itemSave.exec() failed
-                                  itemSave, __FILE__, __LINE__))
+    if (itemSave.lastError().type() != QSqlError::NoError)  // if EITHER itemSave.exec() failed
     {
+      systemError(this, itemSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }

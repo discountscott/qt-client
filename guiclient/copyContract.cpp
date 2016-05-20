@@ -78,9 +78,9 @@ void copyContract::sPopulateContractInfo()
       _vendName->setText(copyPopulate.value("vend_name").toString());
       _effective->setDate(copyPopulate.value("neweffective").toDate());
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Copying Contract"),
-                                  copyPopulate, __FILE__, __LINE__))
+    else if (copyPopulate.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, copyPopulate.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -131,9 +131,9 @@ void copyContract::sCopy()
                                  "Please check the values of these dates."));
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Copying Contract"),
-                                copyq, __FILE__, __LINE__))
+  else if (copyq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, copyq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -150,9 +150,9 @@ void copyContract::sCopy()
                             tr("A Contract already exists for the Vendor,\n"
                                "Contract Number you have specified."));
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Copying Contract"),
-                                copyq, __FILE__, __LINE__))
+  else if (copyq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, copyq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -174,9 +174,9 @@ void copyContract::sCopy()
       int contrctid = copyq.value("contrct_id").toInt();
       done(contrctid);
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Copying Contract"),
-                                  copyq, __FILE__, __LINE__))
+    else if (copyq.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, copyq.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }

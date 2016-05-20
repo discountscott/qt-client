@@ -13,7 +13,6 @@
 #include <QVariant>
 #include <QMessageBox>
 #include <QSqlError>
-#include "errorReporter.h"
 
 /*
  *  Constructs a copyBudget as a child of 'parent', with the
@@ -93,9 +92,9 @@ void copyBudget::sCopy()
                                   "the period inteval." ));
     return;
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Copying Budget"),
-                                copyCopy, __FILE__, __LINE__))
+  else if(copyCopy.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, copyCopy.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 

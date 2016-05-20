@@ -96,8 +96,10 @@ void dspWoHistoryByNumber::sEdit()
 
 void dspWoHistoryByNumber::sPopulateMenu(QMenu *pMenu, QTreeWidgetItem *, int)
 {
-  (void)pMenu->addAction(tr("Edit..."), this, SLOT(sEdit()));
-  (void)pMenu->addAction(tr("View..."), this, SLOT(sView()));
+  QAction *menuItem;
+
+  menuItem = pMenu->addAction(tr("Edit..."), this, SLOT(sEdit()));
+  menuItem = pMenu->addAction(tr("View..."), this, SLOT(sView()));
 }
 
 void dspWoHistoryByNumber::sHandleCosts(bool pShowCosts)
@@ -112,8 +114,8 @@ bool dspWoHistoryByNumber::setParams(ParameterList &params)
 {
   if(_woNumber->text().isEmpty())
   {
-    QMessageBox::warning( this, tr("Enter Work Order Pattern"),
-                      tr( "You must enter a work order pattern for this report." ) );
+    QMessageBox::warning( this, tr("Invalid Work Order Number"),                                                   
+                      tr( "You must enter a work order number for this report." ) );                               
     _woNumber->setFocus();
     return false;
   }

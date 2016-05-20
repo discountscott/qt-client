@@ -18,7 +18,6 @@
 #include <openreports.h>
 
 #include "guiclient.h"
-#include "errorReporter.h"
 
 buyCard::buyCard(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -166,9 +165,9 @@ void buyCard::sHandleItemSource(int pItemsrcid)
       return;
     XSqlQuery poitem = mql.toQuery(params);
     _poitem->populate(poitem);
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Information"),
-                                  poitem, __FILE__, __LINE__))
+    if (poitem.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, poitem.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }

@@ -37,7 +37,6 @@ TODO:	refactor:
 #include "wcombobox.h"
 #include "xtreewidget.h"	// for column widths
 #include "itemSourceSearch.h"
-#include "errorReporter.h"
 
 #define QE_NONINVENTORY
 
@@ -408,18 +407,16 @@ void PoitemTableDelegate::setModelData(QWidget *editor, QAbstractItemModel *pMod
 	      model->setData(model->index(index.row(), WAREHOUS_ID_COL), itemq.value("warehous_id").toInt());
 	      model->setData(model->index(index.row(), WAREHOUS_CODE_COL), itemq.value("warehous_code").toString());
 	    }
-        else if (ErrorReporter::error(QtCriticalMsg, 0, tr("Error Retrieving PO Information"),
-                                      itemq, __FILE__, __LINE__))
-        {
-          hitError = true;
-          break;
-        }
+	    else if (itemq.lastError().type() != QSqlError::NoError)
+	    {
+	      systemError(0, itemq.lastError().databaseText(), __FILE__, __LINE__);
+	      hitError = true;
+	      break;
+	    }
 	    else
 	    {
-          ErrorReporter::error(QtCriticalMsg, 0, tr("Error Occurred"),
-                               tr("Could not find Item Site for %1 (%2).")
-                               .arg(item->itemNumber())
-                               .arg(item->id()),__FILE__,__LINE__);
+	      systemError(0, QString("Could not find Item Site for %1 (%2).")
+			      .arg(item->itemNumber()).arg(item->id()));
 	      hitError = true;
 	      break;
 	    }
@@ -444,12 +441,12 @@ void PoitemTableDelegate::setModelData(QWidget *editor, QAbstractItemModel *pMod
 		hitError = true;
 		break;
 	      }
-          else if (ErrorReporter::error(QtCriticalMsg, 0, tr("Error Retrieving Standard Cost Information"),
-                                        stdcostq, __FILE__, __LINE__))
-          {
-            hitError = true;
-            break;
-          }
+	      else if (stdcostq.lastError().type() != QSqlError::NoError)
+	      {
+		systemError(0, stdcostq.lastError().databaseText(), __FILE__, __LINE__);
+		hitError = true;
+		break;
+	      }
 	    }
 
 	    XSqlQuery itemsrcq;
@@ -518,12 +515,12 @@ void PoitemTableDelegate::setModelData(QWidget *editor, QAbstractItemModel *pMod
 	      if (_metrics->boolean("UseEarliestAvailDateOnPOItem"))
 		model->setData(model->index(index.row(), POITEM_DUEDATE_COL), itemsrcq.value("earliestdate").toDate());
 	    }
-        else if (ErrorReporter::error(QtCriticalMsg, 0, tr("Error Retrieving Item Information"),
-                                      itemsrcq, __FILE__, __LINE__))
-        {
-          hitError = true;
-          break;
-        }
+	    else if (itemsrcq.lastError().type() != QSqlError::NoError)
+	    {
+	      systemError(0, itemsrcq.lastError().databaseText(), __FILE__, __LINE__);
+	      hitError = true;
+	      break;
+	    }
 	  }
 	}
       }
@@ -558,19 +555,17 @@ void PoitemTableDelegate::setModelData(QWidget *editor, QAbstractItemModel *pMod
 	  {
 	    model->setData(model->index(index.row(), POITEM_ITEMSITE_ID_COL), itemq.value("itemsite_id").toInt());
 	  }
-      else if (ErrorReporter::error(QtCriticalMsg, 0, tr("Error Retrieving Item Site Information"),
-                                    itemq, __FILE__, __LINE__))
-      {
-        hitError = true;
-        break;
-      }
+	  else if (itemq.lastError().type() != QSqlError::NoError)
+	  {
+	    systemError(0, itemq.lastError().databaseText(), __FILE__, __LINE__);
+	    hitError = true;
+	    break;
+	  }
 	  else
 	  {
-        ErrorReporter::error(QtCriticalMsg, 0, tr("Error Occurred"),
-                             tr("%1: Could not find Item Site for %1 in %2.")
-                             .arg(model->index(index.row(), ITEM_NUMBER_COL).data().toString())
-                             .arg(whs->currentText())
-                             ,__FILE__,__LINE__);
+	    systemError(0, QString("Could not find Item Site for %1 in %2.")
+			    .arg(model->index(index.row(), ITEM_NUMBER_COL).data().toString())
+			    .arg(whs->currentText()));
 	    hitError = true;
 	    break;
 	  }
@@ -637,12 +632,12 @@ void PoitemTableDelegate::setModelData(QWidget *editor, QAbstractItemModel *pMod
 	  {
 	    model->setData(model->index(index.row(), POITEM_UNITPRICE_COL), PoitemetModelData.value("new_itemsrcp_price").toDouble());
 	  }
-      else if (ErrorReporter::error(QtCriticalMsg, 0, tr("Error Retrieving Item Information"),
-                                    PoitemetModelData, __FILE__, __LINE__))
-      {
-        hitError = true;
-        break;
-      }
+	  else if (PoitemetModelData.lastError().type() != QSqlError::NoError)
+	  {
+	    systemError(0, PoitemetModelData.lastError().databaseText(), __FILE__, __LINE__);
+	    hitError = true;
+	    break;
+	  }
 	  else
 	    model->setData(model->index(index.row(), POITEM_UNITPRICE_COL), 0);
 	}

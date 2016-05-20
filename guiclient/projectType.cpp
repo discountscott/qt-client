@@ -89,9 +89,6 @@ void projectType::sClose()
                 "WHERE (prjtype_id=:prjtype_id);" );
     typeClose.bindValue(":prjtype_id", _prjtypeid);
     typeClose.exec();
-
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Project Type"),
-                              typeClose, __FILE__, __LINE__);
   }
 
   close();
@@ -123,11 +120,6 @@ void projectType::sSave()
   typeSave.bindValue(":prjtype_typeDescr", _typeDescr->text());
   typeSave.bindValue(":prjtype_active", QVariant(_active->isChecked()));
   typeSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Project Type"),
-                                typeSave, __FILE__, __LINE__))
-  {
-    return;
-  }
 
   omfgThis->sItemGroupsUpdated(-1, true);
 

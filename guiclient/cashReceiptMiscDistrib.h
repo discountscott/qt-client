@@ -30,9 +30,6 @@ public slots:
     virtual void populate();
     virtual void sSave();
 
-    virtual void showCustomers(int group, int customer);
-    virtual void setGroup(const ParameterList &pParams);
-
 protected slots:
     virtual void languageChange();
 
@@ -40,8 +37,7 @@ private:
     int _mode;
     int _cashrcptmiscid;
     int _cashrcptid;
-    int _custgrp;
-    int _cashmisc;
+
 };
 
 #endif // CASHRECEIPTMISCDISTRIB_H

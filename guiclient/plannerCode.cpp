@@ -12,7 +12,6 @@
 
 #include <QVariant>
 #include <QMessageBox>
-#include "errorReporter.h"
 
 plannerCode::plannerCode(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
   : XDialog(parent, name, modal, fl)
@@ -141,8 +140,9 @@ void plannerCode::sSave()
       _plancodeid = plannerSave.value("plancode_id").toInt();
     else
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Planner Code Information"),
-                           plannerSave, __FILE__, __LINE__);
+      systemError(this, tr("A System Error occurred at %1::%2.")
+                        .arg(__FILE__)
+                        .arg(__LINE__) );
       return;
     }
 

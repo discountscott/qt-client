@@ -79,7 +79,6 @@
 #include "dspDepositsRegister.h"
 #include "printStatementByCustomer.h"
 #include "printStatementsByCustomerType.h"
-#include "printStatementsByCustomerGroup.h"
 
 // GL
 #include "glTransaction.h"
@@ -118,9 +117,7 @@
 #include "taxAuthorities.h"
 #include "taxAssignments.h"
 #include "taxRegistrations.h"
-#include "dspTax1099.h"
 #include "dspTaxHistory.h"
-#include "dspTaxReturn.h"
 
 #include "reconcileBankaccount.h"
 #include "bankAdjustment.h"
@@ -319,7 +316,7 @@ menuAccounting::menuAccounting(GUIClient *Pparent) :
     { "separator", NULL, NULL, arFormsMenu, "true", NULL, NULL, true, NULL },
     { "ar.printStatementByCustomer", tr("Print S&tatement by Customer..."), SLOT(sPrintStatementByCustomer()), arFormsMenu, "ViewAROpenItems", NULL, NULL, true , NULL },
     { "ar.printStatementsByCustomerType", tr("Print State&ments by Customer Type..."), SLOT(sPrintStatementsByCustomerType()), arFormsMenu, "ViewAROpenItems", NULL, NULL, true , NULL },
-    { "ar.printStatementsByCustomerGroup", tr("Print Statement by Customer &Group..."), SLOT(sPrintStatementsByCustomerGroup()), arFormsMenu, "ViewAROpenItems", NULL, NULL, true, NULL },
+
     // Accounting | Accounts Receivable | Reports
     { "menu", tr("&Reports"), (char*)arReportsMenu,	arMenu, "true",	 NULL, NULL, true, NULL },
     { "ar.dspInvoiceInformation", tr("&Invoice Information..."), SLOT(sDspInvoiceInformation()), arReportsMenu, "ViewAROpenItems", NULL, NULL, true , NULL },
@@ -428,9 +425,7 @@ menuAccounting::menuAccounting(GUIClient *Pparent) :
     // Accounting | Tax | Reports
     { "menu",			tr("&Reports"),	                (char*)taxReportsMenu,		taxMenu,	"true",			    NULL, NULL, true, NULL },
     { "gl.dspTaxHistory",	tr("&Tax History..."),           SLOT(sDspTaxHistory()),        taxReportsMenu, "ViewTaxReconciliations",   NULL, NULL, true, NULL },
-    { "gl.dspTaxReturn",	tr("&Tax Return..."),            SLOT(sDspTaxReturn()),         taxReportsMenu, "ViewTaxReconciliations",   NULL, NULL, true, NULL },
-    { "gl.dspTax1099",	tr("&Info for 1099..."),                 SLOT(sDspTax1099()),           taxReportsMenu, "ViewTaxReconciliations",   NULL, NULL, true, NULL },
-    
+     
     { "separator",		  NULL,					NULL,					mainMenu,		"true",					       NULL, NULL, true, NULL },
 
     // Accounting | Utilities
@@ -461,7 +456,11 @@ void menuAccounting::addActionsToMenu(actionProperties acts[], unsigned int numE
   QAction * m = 0;
   for (unsigned int i = 0; i < numElems; i++)
   {
-    if (acts[i].actionName == QString("menu"))
+    if (! acts[i].visible)
+    {
+      continue;
+    }
+    else if (acts[i].actionName == QString("menu"))
     {
       m = acts[i].menu->addMenu((QMenu*)(acts[i].slot));
       if(m)
@@ -469,11 +468,11 @@ void menuAccounting::addActionsToMenu(actionProperties acts[], unsigned int numE
     }
     else if (acts[i].actionName == QString("separator"))
     {
-      m = acts[i].menu->addSeparator();
+      acts[i].menu->addSeparator();
     }
     else if ((acts[i].toolBar != NULL) && (acts[i].toolBar != NULL))
     {
-      m = new Action( parent,
+      new Action( parent,
                   acts[i].actionName,
                   acts[i].actionTitle,
                   this,
@@ -486,7 +485,7 @@ void menuAccounting::addActionsToMenu(actionProperties acts[], unsigned int numE
     }
     else if (acts[i].toolBar != NULL)
     {
-      m = new Action( parent,
+      new Action( parent,
                   acts[i].actionName,
                   acts[i].actionTitle,
                   this,
@@ -499,7 +498,7 @@ void menuAccounting::addActionsToMenu(actionProperties acts[], unsigned int numE
     }
     else
     {
-      m = new Action( parent,
+      new Action( parent,
                   acts[i].actionName,
                   acts[i].actionTitle,
                   this,
@@ -507,7 +506,6 @@ void menuAccounting::addActionsToMenu(actionProperties acts[], unsigned int numE
                   acts[i].menu,
                   acts[i].priv ) ;
     }
-    if (m) m->setVisible(acts[i].visible);
   }
 }
 
@@ -1046,19 +1044,9 @@ void menuAccounting::sTaxRegistrations()
   omfgThis->handleNewWindow(new taxRegistrations());
 }
 
-void menuAccounting::sDspTax1099()
-{
-  omfgThis->handleNewWindow(new dspTax1099());
-}
-
 void menuAccounting::sDspTaxHistory()
 {
   omfgThis->handleNewWindow(new dspTaxHistory());
-}
-
-void menuAccounting::sDspTaxReturn()
-{
-  omfgThis->handleNewWindow(new dspTaxReturn());
 }
 
 void menuAccounting::sDspBankrecHistory()
@@ -1110,11 +1098,6 @@ void menuAccounting::sPrintStatementByCustomer()
 void menuAccounting::sPrintStatementsByCustomerType()
 {
   printStatementsByCustomerType(parent, "", true).exec();
-}
-
-void menuAccounting::sPrintStatementsByCustomerGroup()
-{
-  printStatementsByCustomerGroup(parent, "", true).exec();
 }
 
 void menuAccounting::sCustomers()

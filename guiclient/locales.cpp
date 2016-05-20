@@ -15,7 +15,6 @@
 #include <QSqlError>
 #include <parameter.h>
 #include "sysLocale.h"
-#include "errorReporter.h"
 
 locales::locales(QWidget* parent, const char* name, Qt::WindowFlags fl)
   : XWidget(parent, name, fl)
@@ -92,9 +91,9 @@ void locales::sCopy()
     newdlg.exec();
     sFillList();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Locale Information"),
-                                syset, __FILE__, __LINE__))
+  else if (syset.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, syset.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

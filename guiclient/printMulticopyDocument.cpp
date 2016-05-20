@@ -308,7 +308,7 @@ void printMulticopyDocument::sPrint()
   if (! isOkToPrint())
     return;
 
-  //bool mpStartedInitialized = _data->_mpIsInitialized;
+  bool mpStartedInitialized = _data->_mpIsInitialized;
 
   _data->_printed.clear();
 
@@ -380,9 +380,7 @@ bool printMulticopyDocument::sPrintOneDoc(XSqlQuery *docq)
     if (orReport::beginMultiPrint(_data->_printer, userCanceled) == false)
     {
       if(!userCanceled)
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                           tr("%1: Could not initialize printing system "
-                              "for multiple reports. ").arg(windowTitle()),__FILE__,__LINE__);
+        systemError(this, tr("Could not initialize printing system for multiple reports."));
       return false;
     }
   }

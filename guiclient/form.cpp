@@ -108,9 +108,9 @@ void form::sSave()
     formSave.exec("SELECT NEXTVAL('form_form_id_seq') AS _form_id");
     if (formSave.first())
       _formid = formSave.value("_form_id").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Form Information"),
-                                  formSave, __FILE__, __LINE__))
+    else if (formSave.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, formSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -151,15 +151,13 @@ void form::sSave()
     formSave.bindValue(":form_key", "PES");
   else if (_key->currentIndex() == 9)
     formSave.bindValue(":form_key", "RA");
-  else if (_key->currentIndex() == 10)
-    formSave.bindValue(":form_key", "TO");
   else
     formSave.bindValue(":form_key", "");
 
   formSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Form Information"),
-                                formSave, __FILE__, __LINE__))
+  if (formSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, formSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -200,14 +198,12 @@ void form::populate()
       _key->setCurrentIndex(8);
     else if (formpopulate.value("form_key").toString() == "RA")
       _key->setCurrentIndex(9);
-    else if (formpopulate.value("form_key").toString() == "TO")
-      _key->setCurrentIndex(10);
     else
       _key->setCurrentIndex(-1);
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Form Information"),
-                                formpopulate, __FILE__, __LINE__))
+  else if (formpopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, formpopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

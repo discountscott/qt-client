@@ -16,7 +16,6 @@
 #include <QSqlError>
 #include <QValidator>
 #include <QVariant>
-#include <errorReporter.h>
 
 distributeToLocation::distributeToLocation(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -330,9 +329,9 @@ void distributeToLocation::populate()
     }
     _locationQty->setDouble(locQty);
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Location Information"),
-                                distributepopulate, __FILE__, __LINE__))
+  else if (distributepopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, distributepopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

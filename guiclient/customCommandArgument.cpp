@@ -13,7 +13,6 @@
 #include <QMessageBox>
 #include <QSqlError>
 #include <QVariant>
-#include "errorReporter.h"
 
 customCommandArgument::customCommandArgument(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -94,9 +93,9 @@ void customCommandArgument::sSave()
 
   if(customSave.exec())
     accept();
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Custom Command Argument"),
-                                customSave, __FILE__, __LINE__))
+  else if (customSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, customSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -115,9 +114,9 @@ void customCommandArgument::populate()
     _order->setValue(custompopulate.value("cmdarg_order").toInt());
     _argument->setText(custompopulate.value("cmdarg_arg").toString());
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Custom Command Argument Information"),
-                                custompopulate, __FILE__, __LINE__))
+  else if (custompopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, custompopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

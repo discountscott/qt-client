@@ -151,9 +151,9 @@ void costCategory::sCheck()
 
       _category->setEnabled(false);
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Creating New Cost Category"),
-                                  costCheck, __FILE__, __LINE__))
+    else if (costCheck.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, costCheck.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -223,8 +223,7 @@ void costCategory::sSave()
       _costcatid = costSave.value("costcat_id").toInt();
     else
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Creating New Cost Category"),
-                                  costSave, __FILE__, __LINE__);
+      systemError(this, costSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -283,9 +282,9 @@ void costCategory::sSave()
   if (_toLiabilityClearing->isValid())
     costSave.bindValue(":costcat_toliability_accnt_id", _toLiabilityClearing->id());
   costSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Cost Category Information"),
-                                costSave, __FILE__, __LINE__))
+  if (costSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, costSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -325,9 +324,9 @@ void costCategory::populate()
 
     emit populated(_costcatid);
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Cost Category Information"),
-                                costpopulate, __FILE__, __LINE__))
+  else if (costpopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, costpopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

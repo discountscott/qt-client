@@ -15,7 +15,6 @@
 #include <QVariant>
 
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 postCheck::postCheck(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -77,9 +76,8 @@ void postCheck::sPost()
     int result = postPost.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Check Information"),
-                             storedProcErrorLookup("postCheck", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("postCheck", result),
+		  __FILE__, __LINE__);
       return;
     }
     omfgThis->sChecksUpdated(postPost.value("checkhead_bankaccnt_id").toInt(), _check->id(), true);
@@ -92,9 +90,9 @@ void postCheck::sPost()
       _close->setText(tr("&Close"));
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Check Information"),
-                                postPost, __FILE__, __LINE__))
+  else if (postPost.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, postPost.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -133,9 +131,9 @@ void postCheck::populate(int pcheckid)
     _bankaccnt->setId(postpopulate.value("checkhead_bankaccnt_id").toInt());
     _check->setId(pcheckid);
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Check Information"),
-                                postpopulate, __FILE__, __LINE__))
+  else if (postpopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, postpopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

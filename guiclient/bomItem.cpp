@@ -37,7 +37,7 @@ bomItem::bomItem(QWidget* parent, const char* name, bool modal, Qt::WindowFlags 
   _substituteGroupInt->addButton(_bomDefinedSubstitutes);
 
   connect(_buttonBox, SIGNAL(accepted()), this, SLOT(sSaveClick()));
-  connect(_buttonBox, SIGNAL(rejected()), this, SLOT(sClose()));
+  connect(_buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
   connect(_item, SIGNAL(typeChanged(const QString&)), this, SLOT(sItemTypeChanged(const QString&)));
   connect(_item, SIGNAL(newId(int)), this, SLOT(sItemIdChanged()));
   connect(_newSubstitution, SIGNAL(clicked()), this, SLOT(sNewSubstitute()));
@@ -48,7 +48,6 @@ bomItem::bomItem(QWidget* parent, const char* name, bool modal, Qt::WindowFlags 
   connect(_editCost, SIGNAL(clicked()), this, SLOT(sEditCost()));
   connect(_deleteCost, SIGNAL(clicked()), this, SLOT(sDeleteCost()));
   connect(_char, SIGNAL(activated(int)), this, SLOT(sCharIdChanged()));
-  connect(_uom, SIGNAL(newID(int)), this, SLOT(sUOMChanged()));
 
   _item->setType(ItemLineEdit::cGeneralComponents);
 
@@ -82,7 +81,6 @@ bomItem::bomItem(QWidget* parent, const char* name, bool modal, Qt::WindowFlags 
       _itemcost->hideColumn(6);
   }
 
-  _invuomid=-1;
   _parentitemid=0;
   _bomheadid=0;
   _saved=false;
@@ -147,10 +145,10 @@ enum SetResponse bomItem::set(const ParameterList &pParams)
       bomet.exec("SELECT NEXTVAL('bomitem_bomitem_id_seq') AS bomitem_id");
       if (bomet.first())
         _bomitemid = bomet.value("bomitem_id").toInt();
-      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving BOM Information"),
-                                    bomet, __FILE__, __LINE__))
+      else if (bomet.lastError().type() != QSqlError::NoError)
       {
-        return UndefinedError;
+	systemError(this, bomet.lastError().databaseText(), __FILE__, __LINE__);
+	return UndefinedError;
       }
   
       //Set up configuration tab if parent item is configured or kit
@@ -198,10 +196,10 @@ enum SetResponse bomItem::set(const ParameterList &pParams)
       bomet.exec("SELECT NEXTVAL('bomitem_bomitem_id_seq') AS bomitem_id");
       if (bomet.first())
         _bomitemid = bomet.value("bomitem_id").toInt();
-      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving BOM Information"),
-                                    bomet, __FILE__, __LINE__))
+      else if (bomet.lastError().type() != QSqlError::NoError)
       {
-        return UndefinedError;
+	systemError(this, bomet.lastError().databaseText(), __FILE__, __LINE__);
+	return UndefinedError;
       }
     }
     else if (param.toString() == "edit")
@@ -218,10 +216,10 @@ enum SetResponse bomItem::set(const ParameterList &pParams)
       bomet.exec("SELECT NEXTVAL('bomitem_bomitem_id_seq') AS bomitem_id");
       if (bomet.first())
         _bomitemid = bomet.value("bomitem_id").toInt();
-      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving BOM Information"),
-                                    bomet, __FILE__, __LINE__))
+      else if (bomet.lastError().type() != QSqlError::NoError)
       {
-        return UndefinedError;
+	systemError(this, bomet.lastError().databaseText(), __FILE__, __LINE__);
+	return UndefinedError;
       }
 
       _dates->setStartDate(omfgThis->dbDate());
@@ -377,9 +375,9 @@ void bomItem::sSave()
 //  bomitem.bindValue(":configFlag", QVariant(false));
 
   bomitem.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving BOM Information"),
-                                bomitem, __FILE__, __LINE__))
+  if (bomitem.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, bomitem.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -398,9 +396,9 @@ void bomItem::sSave()
     replace.bindValue(":sourcebomitemid", _sourceBomitemid);
     replace.bindValue(":bomitem_id", _bomitemid);
     replace.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving BOM Information"),
-                                  replace, __FILE__, __LINE__))
+    if (replace.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, replace.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -415,9 +413,9 @@ void bomItem::sSave()
     replace.bindValue(":bomitem_expires", _dates->startDate());
     replace.bindValue(":sourcebomitemid", _sourceBomitemid);
     replace.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving BOM Information"),
-                                  replace, __FILE__, __LINE__))
+    if (replace.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, replace.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -447,9 +445,9 @@ void bomItem::sClose()
                "WHERE (bomitemcost_bomitem_id=:bomitem_id);" );
     bomClose.bindValue("bomitem_id", _bomitemid);
     bomClose.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error cancelling BOM Operation"),
-                                  bomClose, __FILE__, __LINE__))
+    if (bomClose.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, bomClose.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -465,85 +463,6 @@ void bomItem::sItemTypeChanged(const QString &type)
   {
     _createWo->setEnabled(false);
     _createWo->setChecked(false);
-  }
-}
-
-void bomItem::sPopulateUOM()
-{
-  if (_item->id() != -1)
-  {
-    // Get list of active, valid Material Issue UOMs
-    MetaSQLQuery muom = mqlLoad("uoms", "item");
-    
-    ParameterList params;
-    params.append("uomtype", "MaterialIssue");
-    params.append("item_id", _item->id());
-    
-    // Include Global UOMs
-    if (_privileges->check("MaintainUOMs"))
-    {
-      params.append("includeGlobal", true);
-      params.append("global", tr("-Global"));
-    }
-    
-    // Also have to factor UOMs previously used on BOM Item now inactive
-    if (_bomitemid != -1)
-    {
-      XSqlQuery bomuom;
-      bomuom.prepare("SELECT bomitem_uom_id "
-                     "  FROM bomitem"
-                     " WHERE(bomitem_id=:bomitem_id);");
-      bomuom.bindValue(":bomitem_id", _bomitemid);
-      bomuom.exec();
-      if (ErrorReporter::error(QtCriticalMsg, this, tr("Getting BOM Item UOMs"),
-                               bomuom, __FILE__, __LINE__))
-        return;
-      else if (bomuom.first())
-        params.append("uom_id", bomuom.value("bomitem_uom_id"));
-    }
-
-    XSqlQuery quom = muom.toQuery(params);
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Getting UOMs"),
-                             quom, __FILE__, __LINE__))
-      return;
-
-    int saveuomid = _uom->id();
-    disconnect(_uom, SIGNAL(newID(int)), this, SLOT(sUOMChanged()));
-    _uom->populate(quom);
-    _uom->setId(saveuomid);
-    connect(_uom, SIGNAL(newID(int)), this, SLOT(sUOMChanged()));
-  }
-}
-
-void bomItem::sUOMChanged()
-{
-  // Check for Global UOM Conversion that must be setup for Item
-  if (_uom->code() == "G")
-  {
-    if (QMessageBox::question(this, tr("Use Global UOM?"),
-                              tr("<p>This Global UOM Conversion is not setup for this Item."
-                                 "<p>Do you want to add this UOM conversion to this Item?"),
-                              QMessageBox::Yes | QMessageBox::Default,
-                              QMessageBox::No  | QMessageBox::Escape) == QMessageBox::Yes)
-    {
-      // create itemuomconv and itemuom
-      XSqlQuery adduom;
-      adduom.prepare("SELECT createItemUomConv(:item_id, :uom_id, :uom_type) AS result;");
-      adduom.bindValue(":item_id", _item->id());
-      adduom.bindValue(":uom_id", _uom->id());
-      adduom.bindValue(":uom_type", "MaterialIssue");
-      adduom.exec();
-      if (ErrorReporter::error(QtCriticalMsg, this, tr("Creating Item UOM Conv"),
-                               adduom, __FILE__, __LINE__))
-        return;
-      
-      // repopulate uom combobox
-      sPopulateUOM();
-    }
-    else
-    {
-      _uom->setId(_invuomid);
-    }
   }
 }
 
@@ -660,9 +579,9 @@ void bomItem::sDeleteSubstitute()
              "WHERE (bomitemsub_id=:bomitemsub_id);" );
   bomDeleteSubstitute.bindValue(":bomitemsub_id", _bomitemsub->id());
   bomDeleteSubstitute.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting BOM Substitute"),
-                                bomDeleteSubstitute, __FILE__, __LINE__))
+  if (bomDeleteSubstitute.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, bomDeleteSubstitute.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -681,17 +600,39 @@ void bomItem::sFillSubstituteList()
   bomFillSubstituteList.bindValue(":bomitem_id", _bomitemid);
   bomFillSubstituteList.exec();
   _bomitemsub->populate(bomFillSubstituteList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving BOM Information"),
-                                bomFillSubstituteList, __FILE__, __LINE__))
+  if (bomFillSubstituteList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, bomFillSubstituteList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
 
 void bomItem::sItemIdChanged()
 {
-  // Get list of active, valid Material Issue UOMs
-  sPopulateUOM();
+// Prevent job costed items from being added to the BOM
+  XSqlQuery qry;
+  qry.prepare("SELECT EXISTS(SELECT 1 FROM itemsite WHERE itemsite_item_id = :item_id AND itemsite_costmethod = 'J')");
+  qry.bindValue(":item_id", _item->id());
+  qry.exec();
+  if (qry.first() && qry.value("exists").toBool())
+  {
+    QMessageBox::question(this, tr("Job Costed Item"),
+                            tr("You cannot add a Job Costed item to a Bill of Material"));
+    _item->setId(-1);
+    return;
+  }
+  else if (qry.lastError().type() != QSqlError::NoError)
+      ErrorReporter::error(QtCriticalMsg, this, tr("Item Job cost check"),
+                           qry, __FILE__, __LINE__);
+
+  MetaSQLQuery muom = mqlLoad("uoms", "item");
+
+  ParameterList params;
+  params.append("uomtype", "MaterialIssue");
+  params.append("item_id", _item->id());
+
+  XSqlQuery quom = muom.toQuery(params);
+  _uom->populate(quom);
 
   XSqlQuery qitem;
   qitem.prepare("SELECT item_inv_uom_id, item_type "
@@ -701,28 +642,7 @@ void bomItem::sItemIdChanged()
   qitem.exec();
   if(qitem.first())
   {
-    if (qitem.value("item_type").toString() != "P" && qitem.value("item_type").toString() != "O")
-    {
-      // Prevent job costed items from being added to the BOM
-      XSqlQuery qry;
-      qry.prepare("SELECT itemsite_id FROM itemsite WHERE itemsite_item_id = :item_id AND itemsite_costmethod = 'J';");
-      qry.bindValue(":item_id", _item->id());
-      qry.exec();
-      if (qry.first())
-      {
-        QMessageBox::critical(this, tr("Job Costed Item"),
-                              tr("You cannot add a Job Costed item to a Bill of Material"));
-        _item->setId(-1);
-        _item->setFocus();
-        return;
-      }
-      else if (qry.lastError().type() != QSqlError::NoError)
-        ErrorReporter::error(QtCriticalMsg, this, tr("Item Job cost check"),
-                             qry, __FILE__, __LINE__);
-    }
-
-    _invuomid = qitem.value("item_inv_uom_id").toInt();
-    _uom->setId(_invuomid);
+    _uom->setId(qitem.value("item_inv_uom_id").toInt());
     if (qitem.value("item_type").toString() != "T" && qitem.value("item_type").toString() != "R")
     {
       if (_qtyPer->text().length() == 0)
@@ -736,10 +656,8 @@ void bomItem::sItemIdChanged()
       _qtyFxd->setDouble(1.0);
       _qtyPer->setDouble(0.0);
     }
-
     if (_scrap->text().length() == 0)
       _scrap->setDouble(0.0);
-    
   }
 }
 
@@ -789,9 +707,9 @@ void bomItem::sFillCostList()
     }
 
     _itemcost->populate(qry, true);
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving BOM Information"),
-                                  qry, __FILE__, __LINE__))
+    if (qry.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, qry.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -843,9 +761,9 @@ void bomItem::sFillCostList()
                             "",
                             baseKnown ? formatCost(actualCost) : tr("?????"),
                             convert.value("currConcat"));
-    else
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving BOM Information"),
-                             convert, __FILE__, __LINE__);
+    else if (convert.lastError().type() != QSqlError::NoError)
+        systemError(this, convert.lastError().databaseText(), __FILE__, __LINE__);
+
   }
   else
     _itemcost->clear();
@@ -858,8 +776,8 @@ void bomItem::sHandleBomitemCost()
   qry.bindValue(":bomitem_id", _bomitemid);
   qry.bindValue(":enabled", _bomDefinedCosts->isChecked());
   qry.exec();
-  ErrorReporter::error(QtCriticalMsg, this, tr("Error Toggling BOM Cost Setting"),
-                                qry, __FILE__, __LINE__);
+  if (qry.lastError().type() != QSqlError::NoError)
+    systemError(this, qry.lastError().databaseText(), __FILE__, __LINE__);
   sFillCostList();
 }
 
@@ -910,8 +828,8 @@ void bomItem::sDeleteCost()
   bomDeleteCost.prepare( "DELETE FROM bomitemcost WHERE (bomitemcost_id=:bomitemcost_id);" );
   bomDeleteCost.bindValue(":bomitemcost_id", _itemcost->id());
   bomDeleteCost.exec();
-  ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting BOM Cost Component"),
-                                bomDeleteCost, __FILE__, __LINE__);
+  if (bomDeleteCost.lastError().type() != QSqlError::NoError)
+    systemError(this, bomDeleteCost.lastError().databaseText(), __FILE__, __LINE__);
 
   sFillCostList();
 }

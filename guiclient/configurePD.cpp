@@ -15,7 +15,6 @@
 #include <QSqlError>
 #include "storedProcErrorLookup.h"
 #include "guiclient.h"
-#include "errorReporter.h"
 
 configurePD::configurePD(QWidget* parent, const char* name, bool /*modal*/, Qt::WindowFlags fl)
     : XAbstractConfigure(parent, fl)
@@ -110,10 +109,8 @@ bool configurePD::sSave()
       configureSave.exec(rsql);
       if (configureSave.first() && (configureSave.value("result").toInt() < 0))
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Period"),
-                                 storedProcErrorLookup("CreateRevision",
-                                 configureSave.value("result").toInt()),
-                                 __FILE__, __LINE__);
+        systemError(this, storedProcErrorLookup("CreateRevision", configureSave.value("result").toInt()),
+            __FILE__, __LINE__);
         _metrics->set("RevControl", false);
         return false;
       }

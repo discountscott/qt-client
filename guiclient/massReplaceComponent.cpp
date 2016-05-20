@@ -105,13 +105,12 @@ void massReplaceComponent::sReplace()
       int result = massReplace.value("result").toInt();
       if (result < 0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Replacing BOM Item(s)"),
-                               storedProcErrorLookup("massReplaceBomitem", result),
-                               __FILE__, __LINE__);
+        systemError(this, storedProcErrorLookup("massReplaceBomitem", result),
+                    __FILE__, __LINE__);
         return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Replacing BOM Item(s)"),
+    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Replacing BOM Items"),
                                   massReplace, __FILE__, __LINE__))
       return;
 

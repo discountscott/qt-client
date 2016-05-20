@@ -52,7 +52,6 @@ protected slots:
 private:
     QString _cUsername;
     bool _authCache;
-    QString _windowCache;
     int  _crmacctid;
     QString _crmowner;
     bool _inTransaction;

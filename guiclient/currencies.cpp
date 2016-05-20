@@ -29,7 +29,6 @@ currencies::currencies(QWidget* parent, const char* name, Qt::WindowFlags fl)
   connect(_edit, SIGNAL(clicked()), this, SLOT(sEdit()));
   connect(_delete, SIGNAL(clicked()), this, SLOT(sDelete()));
   connect(_view, SIGNAL(clicked()), this, SLOT(sView()));
-  connect(_curr, SIGNAL(newId(int)), this, SLOT(sSetCommentType()));
   connect(_curr, SIGNAL(populateMenu(QMenu*,QTreeWidgetItem*,int)), this, SLOT(sPopulateMenu(QMenu*)));
 
   if (_privileges->check("MaintainCurrencies"))
@@ -93,9 +92,9 @@ void currencies::sNew()
            "Accounts in 'System | Configure Modules | Configure G/L...' before "
            "posting any transactions in the system.") );
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Currency Information"),
-                                  currenciesNew, __FILE__, __LINE__))
+    else if (currenciesNew.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, currenciesNew.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -138,18 +137,18 @@ void currencies::sDelete()
                             tr("You cannot delete the base currency."));
       return;
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Currency"),
-                                currenciesDelete, __FILE__, __LINE__))
+  else if (currenciesDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, currenciesDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   
   currenciesDelete.prepare("DELETE FROM curr_symbol WHERE curr_id = :curr_id");
   currenciesDelete.bindValue(":curr_id", _curr->id());
   currenciesDelete.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Currency"),
-                                currenciesDelete, __FILE__, __LINE__))
+  if (currenciesDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, currenciesDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   
@@ -186,9 +185,4 @@ void currencies::sPopulateMenu(QMenu* pMenu)
   menuItem = pMenu->addAction(tr("Delete..."));
   connect(menuItem, SIGNAL(triggered()), this, SLOT(sDelete()));
   menuItem->setEnabled(_privileges->check("MaintainCurrencies"));
-}
-
-void currencies::sSetCommentType()
-{
-  _FXcomments->setId(_curr->id());
 }

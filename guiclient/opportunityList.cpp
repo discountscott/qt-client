@@ -22,7 +22,6 @@
 #include "opportunity.h"
 #include "parameterwidget.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 opportunityList::opportunityList(QWidget* parent, const char*, Qt::WindowFlags fl)
   : display(parent, "opportunityList", fl)
@@ -179,17 +178,15 @@ void opportunityList::sDelete()
     int result = opportunityDelete.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Opportunity"),
-                             storedProcErrorLookup("deleteOpportunity", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("deleteOpportunity", result));
       return;
     }
     else
       sFillList();
     }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Opportunity"),
-                                opportunityDelete, __FILE__, __LINE__))
+  else if (opportunityDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, opportunityDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -202,8 +199,7 @@ void opportunityList::sDeactivate()
   opportunityDeactivate.bindValue(":ophead_id", list()->id());
   opportunityDeactivate.exec();
   if (opportunityDeactivate.lastError().type() != QSqlError::NoError)
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Deactiving Opportunity"),
-                       opportunityDeactivate, __FILE__, __LINE__);
+    systemError(this, opportunityDeactivate.lastError().databaseText(), __FILE__, __LINE__);
   else
     sFillList();
 }
@@ -215,8 +211,7 @@ void opportunityList::sActivate()
   opportunityActivate.bindValue(":ophead_id", list()->id());
   opportunityActivate.exec();
   if (opportunityActivate.lastError().type() != QSqlError::NoError)
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Activating Opportunity"),
-                       opportunityActivate, __FILE__, __LINE__);
+    systemError(this, opportunityActivate.lastError().databaseText(), __FILE__, __LINE__);
   else
     sFillList();
 }
@@ -234,23 +229,20 @@ bool opportunityList::setParams(ParameterList &params)
 
 void opportunityList::sOpen()
 {
-  if (list()->id() > 0)
-  {
-    bool editPriv =
-    (omfgThis->username() == list()->currentItem()->rawValue("ophead_owner_username") && _privileges->check("MaintainPersonalOpportunities")) ||
-    (omfgThis->username() == list()->currentItem()->rawValue("ophead_username") && _privileges->check("MaintainPersonalOpportunities")) ||
-    (_privileges->check("MaintainAllOpportunities"));
-    
-    bool viewPriv =
-    (omfgThis->username() == list()->currentItem()->rawValue("ophead_owner_username") && _privileges->check("ViewPersonalOpportunities")) ||
-    (omfgThis->username() == list()->currentItem()->rawValue("ophead_username") && _privileges->check("ViewPersonalOpportunities")) ||
-    (_privileges->check("ViewAllOpportunities"));
-    
-    if (editPriv)
-      sEdit();
-    else if (viewPriv)
-      sView();
-  }
+  bool editPriv =
+      (omfgThis->username() == list()->currentItem()->rawValue("ophead_owner_username") && _privileges->check("MaintainPersonalOpportunities")) ||
+      (omfgThis->username() == list()->currentItem()->rawValue("ophead_username") && _privileges->check("MaintainPersonalOpportunities")) ||
+      (_privileges->check("MaintainAllOpportunities"));
+
+  bool viewPriv =
+      (omfgThis->username() == list()->currentItem()->rawValue("ophead_owner_username") && _privileges->check("ViewPersonalOpportunities")) ||
+      (omfgThis->username() == list()->currentItem()->rawValue("ophead_username") && _privileges->check("ViewPersonalOpportunities")) ||
+      (_privileges->check("ViewAllOpportunities"));
+
+  if (editPriv)
+    sEdit();
+  else if (viewPriv)
+    sView();
 }
 
 

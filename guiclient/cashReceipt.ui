@@ -9,14 +9,11 @@ is available at www.xtuple.com/CPAL.  By using this software, you agree
 to be bound by its terms.</comment>
  <class>cashReceipt</class>
  <widget class="QWidget" name="cashReceipt">
-  <property name="enabled">
-   <bool>true</bool>
-  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1274</width>
+    <width>771</width>
     <height>749</height>
    </rect>
   </property>
@@ -29,6 +26,120 @@ to be bound by its terms.</comment>
      <property name="spacing">
       <number>12</number>
      </property>
+     <item row="0" column="0" colspan="2">
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="CustCluster" name="_cust">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="focusPolicy">
+          <enum>Qt::StrongFocus</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <property name="topMargin">
+          <number>3</number>
+         </property>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QLabel" name="_numberLit">
+             <property name="text">
+              <string>Number:</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="_number">
+             <property name="minimumSize">
+              <size>
+               <width>100</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <spacer name="verticalSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <spacer>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Expanding</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>0</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <layout class="QGridLayout">
+         <item row="0" column="0">
+          <widget class="QPushButton" name="_save">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>&amp;Save</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QPushButton" name="_close">
+           <property name="text">
+            <string>&amp;Cancel</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <spacer>
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Expanding</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>81</width>
+             <height>16</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
      <item row="1" column="0">
       <widget class="QGroupBox" name="_amountGroup">
        <property name="title">
@@ -40,7 +151,7 @@ to be bound by its terms.</comment>
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_2">
             <item>
-             <layout class="QGridLayout" name="gridLayout_9">
+             <layout class="QGridLayout" name="gridLayout">
               <item row="0" column="0">
                <widget class="QLabel" name="_receivedLit">
                 <property name="text">
@@ -887,110 +998,6 @@ to be bound by its terms.</comment>
        </layout>
       </widget>
      </item>
-     <item row="0" column="0" colspan="2">
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
-       <item>
-        <widget class="CustomerSelector" name="_customerSelector"/>
-       </item>
-       <item>
-        <layout class="QVBoxLayout" name="verticalLayout">
-         <property name="topMargin">
-          <number>3</number>
-         </property>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout">
-           <item>
-            <widget class="QLabel" name="_numberLit">
-             <property name="text">
-              <string>Number:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="_number">
-             <property name="minimumSize">
-              <size>
-               <width>100</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <spacer name="verticalSpacer">
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>20</width>
-             <height>40</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <spacer>
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeType">
-          <enum>QSizePolicy::Expanding</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>0</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <layout class="QGridLayout">
-         <item row="0" column="0">
-          <widget class="QPushButton" name="_save">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="text">
-            <string>&amp;Save</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QPushButton" name="_close">
-           <property name="text">
-            <string>&amp;Cancel</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0" colspan="2">
-          <spacer>
-           <property name="orientation">
-            <enum>Qt::Vertical</enum>
-           </property>
-           <property name="sizeType">
-            <enum>QSizePolicy::Expanding</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>81</width>
-             <height>16</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-        </layout>
-       </item>
-      </layout>
-     </item>
     </layout>
    </item>
   </layout>
@@ -1001,7 +1008,6 @@ to be bound by its terms.</comment>
    <class>CurrCluster</class>
    <extends>CurrDisplay</extends>
    <header>currcluster.h</header>
-   <container>1</container>
   </customwidget>
   <customwidget>
    <class>CurrDisplay</class>
@@ -1009,9 +1015,9 @@ to be bound by its terms.</comment>
    <header>currcluster.h</header>
   </customwidget>
   <customwidget>
-   <class>CustomerSelector</class>
+   <class>CustCluster</class>
    <extends>QWidget</extends>
-   <header>customerselector.h</header>
+   <header>custcluster.h</header>
   </customwidget>
   <customwidget>
    <class>DLineEdit</class>
@@ -1048,6 +1054,7 @@ to be bound by its terms.</comment>
   </customwidget>
  </customwidgets>
  <tabstops>
+  <tabstop>_cust</tabstop>
   <tabstop>_received</tabstop>
   <tabstop>_balCreditMemo</tabstop>
   <tabstop>_balCustomerDeposit</tabstop>
@@ -1085,18 +1092,34 @@ to be bound by its terms.</comment>
  <resources/>
  <connections>
   <connection>
+   <sender>_cust</sender>
+   <signal>valid(bool)</signal>
+   <receiver>_save</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>753</x>
+     <y>64</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
    <sender>_aropen</sender>
    <signal>valid(bool)</signal>
    <receiver>_apply</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>44</x>
-     <y>727</y>
+     <x>32</x>
+     <y>364</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1250</x>
-     <y>529</y>
+     <x>706</x>
+     <y>368</y>
     </hint>
    </hints>
   </connection>
@@ -1107,12 +1130,12 @@ to be bound by its terms.</comment>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>44</x>
-     <y>727</y>
+     <x>32</x>
+     <y>364</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1250</x>
-     <y>589</y>
+     <x>706</x>
+     <y>386</y>
     </hint>
    </hints>
   </connection>
@@ -1123,12 +1146,44 @@ to be bound by its terms.</comment>
    <slot>animateClick()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>44</x>
-     <y>727</y>
+     <x>32</x>
+     <y>364</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1250</x>
-     <y>529</y>
+     <x>706</x>
+     <y>368</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>_cust</sender>
+   <signal>valid(bool)</signal>
+   <receiver>_applyToBalance</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>705</x>
+     <y>396</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>_cust</sender>
+   <signal>valid(bool)</signal>
+   <receiver>_add</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>733</x>
+     <y>476</y>
     </hint>
    </hints>
   </connection>
@@ -1143,8 +1198,8 @@ to be bound by its terms.</comment>
      <y>105</y>
     </hint>
     <hint type="destinationlabel">
-     <x>325</x>
-     <y>198</y>
+     <x>195</x>
+     <y>152</y>
     </hint>
    </hints>
   </connection>
@@ -1159,8 +1214,8 @@ to be bound by its terms.</comment>
      <y>105</y>
     </hint>
     <hint type="destinationlabel">
-     <x>325</x>
-     <y>164</y>
+     <x>195</x>
+     <y>179</y>
     </hint>
    </hints>
   </connection>
@@ -1191,8 +1246,8 @@ to be bound by its terms.</comment>
      <y>105</y>
     </hint>
     <hint type="destinationlabel">
-     <x>325</x>
-     <y>198</y>
+     <x>195</x>
+     <y>152</y>
     </hint>
    </hints>
   </connection>
@@ -1207,8 +1262,8 @@ to be bound by its terms.</comment>
      <y>105</y>
     </hint>
     <hint type="destinationlabel">
-     <x>325</x>
-     <y>164</y>
+     <x>195</x>
+     <y>179</y>
     </hint>
    </hints>
   </connection>
@@ -1225,6 +1280,22 @@ to be bound by its terms.</comment>
     <hint type="destinationlabel">
      <x>195</x>
      <y>206</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>_cust</sender>
+   <signal>valid(bool)</signal>
+   <receiver>_newCC</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>31</x>
+     <y>285</y>
     </hint>
    </hints>
   </connection>
@@ -1235,12 +1306,12 @@ to be bound by its terms.</comment>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>43</x>
-     <y>485</y>
+     <x>31</x>
+     <y>285</y>
     </hint>
     <hint type="destinationlabel">
-     <x>101</x>
-     <y>477</y>
+     <x>31</x>
+     <y>285</y>
     </hint>
    </hints>
   </connection>
@@ -1251,12 +1322,12 @@ to be bound by its terms.</comment>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>43</x>
-     <y>485</y>
+     <x>31</x>
+     <y>285</y>
     </hint>
     <hint type="destinationlabel">
-     <x>101</x>
-     <y>480</y>
+     <x>31</x>
+     <y>285</y>
     </hint>
    </hints>
   </connection>
@@ -1267,12 +1338,12 @@ to be bound by its terms.</comment>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>43</x>
-     <y>485</y>
+     <x>31</x>
+     <y>285</y>
     </hint>
     <hint type="destinationlabel">
-     <x>101</x>
-     <y>485</y>
+     <x>31</x>
+     <y>285</y>
     </hint>
    </hints>
   </connection>
@@ -1283,12 +1354,12 @@ to be bound by its terms.</comment>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>43</x>
-     <y>485</y>
+     <x>31</x>
+     <y>285</y>
     </hint>
     <hint type="destinationlabel">
-     <x>101</x>
-     <y>483</y>
+     <x>31</x>
+     <y>285</y>
     </hint>
    </hints>
   </connection>
@@ -1299,8 +1370,8 @@ to be bound by its terms.</comment>
    <slot>setEffective(QDate)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>997</x>
-     <y>272</y>
+     <x>551</x>
+     <y>190</y>
     </hint>
     <hint type="destinationlabel">
      <x>195</x>
@@ -1315,12 +1386,12 @@ to be bound by its terms.</comment>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>376</x>
-     <y>727</y>
+     <x>364</x>
+     <y>463</y>
     </hint>
     <hint type="destinationlabel">
-     <x>1250</x>
-     <y>559</y>
+     <x>794</x>
+     <y>385</y>
     </hint>
    </hints>
   </connection>
@@ -1331,12 +1402,12 @@ to be bound by its terms.</comment>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>43</x>
-     <y>485</y>
+     <x>31</x>
+     <y>285</y>
     </hint>
     <hint type="destinationlabel">
-     <x>101</x>
-     <y>479</y>
+     <x>31</x>
+     <y>285</y>
     </hint>
    </hints>
   </connection>
@@ -1347,12 +1418,12 @@ to be bound by its terms.</comment>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>43</x>
-     <y>485</y>
+     <x>31</x>
+     <y>285</y>
     </hint>
     <hint type="destinationlabel">
-     <x>101</x>
-     <y>483</y>
+     <x>31</x>
+     <y>285</y>
     </hint>
    </hints>
   </connection>

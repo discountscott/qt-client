@@ -24,7 +24,6 @@
 #include "inputManager.h"
 #include "xmessagebox.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 reserveSalesOrderItem::reserveSalesOrderItem(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -178,15 +177,14 @@ void reserveSalesOrderItem::sSave()
       int result = reserveq.value("result").toInt();
       if (result < 0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sales Order Information"),
-                               storedProcErrorLookup("reserveSoLineQty", result),
-                               __FILE__, __LINE__);
+        systemError( this, storedProcErrorLookup("reserveSoLineQty", result),
+                    __FILE__, __LINE__);
         return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sales Order Information"),
-                                  reserveq, __FILE__, __LINE__))
+    else if (reserveq.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, reserveq.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -222,9 +220,9 @@ void reserveSalesOrderItem::populate()
     else
       _bcQty->clear();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sales Order Information"),
-                                distributepopulate, __FILE__, __LINE__))
+  else if (distributepopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, distributepopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -271,9 +269,9 @@ void reserveSalesOrderItem::populate()
     _allocated->setDouble(itemq.value("totreserved").toDouble());
     _unreserved->setDouble(itemq.value("totunreserved").toDouble());
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sales Order Information"),
-                                itemq, __FILE__, __LINE__))
+  else if (itemq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, itemq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -310,9 +308,9 @@ void reserveSalesOrderItem::sFillList()
   XSqlQuery reserveFillList = mql.toQuery(params);
     
   _itemloc->populate(reserveFillList, true);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sales Order Information"),
-                                reserveFillList, __FILE__, __LINE__))
+  if (reserveFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, reserveFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -342,15 +340,14 @@ void reserveSalesOrderItem::sReserveLocation()
     int result = reserveq.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sales Order Information"),
-                             storedProcErrorLookup("reserveSoLineQty", result),
-                             __FILE__, __LINE__);
+      systemError( this, storedProcErrorLookup("reserveSoLineQty", result),
+                  __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sales Order Information"),
-                                reserveq, __FILE__, __LINE__))
+  else if (reserveq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, reserveq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   populate();
@@ -380,15 +377,14 @@ void reserveSalesOrderItem::sUnreserveLocation()
     int result = reserveq.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sales Order Information"),
-                             storedProcErrorLookup("unreserveSoLineQty", result),
-                             __FILE__, __LINE__);
+      systemError( this, storedProcErrorLookup("unreserveSoLineQty", result),
+                  __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sales Order Information"),
-                                reserveq, __FILE__, __LINE__))
+  else if (reserveq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, reserveq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   populate();
@@ -421,9 +417,9 @@ void reserveSalesOrderItem::sBcReserve()
   
   if(!reserveBc.first())
   {
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sales Order Information"),
-                                  reserveBc, __FILE__, __LINE__))
+    if (reserveBc.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, reserveBc.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
     QMessageBox::warning(this, tr("No Match Found"),
@@ -444,15 +440,14 @@ void reserveSalesOrderItem::sBcReserve()
     int result = reserveq.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sales Order Information"),
-                             storedProcErrorLookup("reserveSoLineQty", result),
-                             __FILE__, __LINE__);
+      systemError( this, storedProcErrorLookup("reserveSoLineQty", result),
+                  __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sales Order Information"),
-                                reserveBc, __FILE__, __LINE__))
+  else if (reserveq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, reserveq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   double _savebcQty = _bcQty->text().toDouble();

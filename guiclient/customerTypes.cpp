@@ -21,7 +21,6 @@
 #include "customerType.h"
 #include "guiclient.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 customerTypes::customerTypes(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -115,15 +114,14 @@ void customerTypes::sDelete()
     int result = customerDelete.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Customer Type"),
-                             storedProcErrorLookup("deleteCustomerType", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("deleteCustomerType", result),
+                  __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Customer Type"),
-                                customerDelete, __FILE__, __LINE__))
+  else if (customerDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, customerDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   sFillList();

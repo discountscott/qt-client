@@ -127,7 +127,6 @@ itemAvailabilityWorkbench::itemAvailabilityWorkbench(QWidget* parent, const char
   _dspSalesOrdersByItem->setCloseVisible(false);
   _dspSalesOrdersByItem->setQueryOnStartEnabled(false);
   _dspSalesOrdersByItem->findChild<QWidget*>("_item")->hide();
-  _dspSalesOrdersByItem->findChild<DateCluster*>("_dates")->setStartDate(QDate().currentDate().addDays(-30));
   
   _dspQuotesByItem = new dspQuotesByItem(this, "dspQuotesByItem", Qt::Widget);
   _dspQuotesByItem->setObjectName("dspQuotesByItem");
@@ -367,12 +366,6 @@ void itemAvailabilityWorkbench::sFillList()
   }
   else if (_tab->currentIndex() == _tab->indexOf(_ordersTab))
   {
-      _salesOrderItemsButton->setEnabled(_sold);
-      _quoteItemsButton->setEnabled(_sold);
-      _customerPricesButton->setEnabled(_sold);
-    if (!_sold){
-      _purchaseOrderItemsButton->setChecked(true);
-    }
     if (_purchaseOrderItemsButton->isChecked())
       _dspPoItemsByItem->sFillList();
     else if (_salesOrderItemsButton->isChecked() && _sold)

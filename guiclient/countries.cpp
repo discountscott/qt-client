@@ -19,7 +19,6 @@
 #include <parameter.h>
 
 #include "country.h"
-#include "errorReporter.h"
 
 countries::countries(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -117,8 +116,9 @@ void countries::sDelete()
     countriesDelete.prepare("DELETE FROM country WHERE country_id = :country_id;");
     countriesDelete.bindValue(":country_id", _countries->id());
     countriesDelete.exec();
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Country"),
-                         countriesDelete, __FILE__, __LINE__);
+    if (countriesDelete.lastError().type() != QSqlError::NoError)
+      systemError(this, countriesDelete.lastError().databaseText(), __FILE__, __LINE__);
+  
     sFillList();
   }
 }
@@ -133,9 +133,9 @@ void countries::sFillList()
              "ORDER BY country_name;" );
   countriesFillList.exec();
   _countries->populate(countriesFillList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Country Information"),
-                                countriesFillList, __FILE__, __LINE__))
+  if (countriesFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, countriesFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

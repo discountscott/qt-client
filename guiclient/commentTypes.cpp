@@ -16,7 +16,6 @@
 
 #include <openreports.h>
 #include "commentType.h"
-#include "errorReporter.h"
 
 commentTypes::commentTypes(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -58,9 +57,9 @@ void commentTypes::sFillList()
              "ORDER BY cmnttype_order, cmnttype_name;" );
   commentFillList.exec();
   _cmnttype->populate(commentFillList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Comment Type Information"),
-                                commentFillList, __FILE__, __LINE__))
+  if (commentFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, commentFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

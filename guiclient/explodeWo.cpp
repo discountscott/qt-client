@@ -16,7 +16,6 @@
 
 #include "inputManager.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 explodeWo::explodeWo(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
   : XDialog(parent, name, modal, fl)
@@ -79,15 +78,15 @@ void explodeWo::sExplode()
       int result = explodeExplode.value("result").toInt();
       if (result < 0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Exploding Work Order"),
-                               storedProcErrorLookup("explodeWo", result),
-                               __FILE__, __LINE__);
-        return;
+	systemError(this,
+		    storedProcErrorLookup("explodeWo", result).arg(_wo->woNumber()),
+		    __FILE__, __LINE__);
+	return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Exploding Work Order"),
-                                  explodeExplode, __FILE__, __LINE__))
+    else if (explodeExplode.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, explodeExplode.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 

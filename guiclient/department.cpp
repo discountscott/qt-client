@@ -13,7 +13,6 @@
 #include <QMessageBox>
 #include <QSqlError>
 #include <QVariant>
-#include "errorReporter.h"
 
 department::department(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -114,8 +113,10 @@ void department::sSave()
       _deptid =  departmentSave.value("dept_id").toInt();
     else
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Department Information"),
-                           departmentSave, __FILE__, __LINE__);
+      systemError(this, tr("A System Error occurred at %1::%2\n\n%3")
+                          .arg(__FILE__)
+                          .arg(__LINE__)
+                          .arg(departmentSave.lastError().databaseText()));
       return;
     }
     departmentSave.prepare("INSERT INTO dept ( dept_id,  dept_number,  dept_name ) "
@@ -136,8 +137,10 @@ void department::sSave()
   departmentSave.exec();
   if (departmentSave.lastError().type() != QSqlError::NoError)
   {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Department Information"),
-                           departmentSave, __FILE__, __LINE__);
+    systemError(this, tr("A System Error occurred at %1::%2\n\n%3")
+                        .arg(__FILE__)
+                        .arg(__LINE__)
+                        .arg(departmentSave.lastError().databaseText()));
     return;
   }
 
@@ -163,7 +166,9 @@ void department::populate()
     _name->setText(departmentpopulate.value("dept_name"));
   }
   else
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Department Information"),
-                           departmentpopulate, __FILE__, __LINE__);
+    systemError(this, tr("A System Error occurred at %1::%2\n\n%3")
+                        .arg(__FILE__)
+                        .arg(__LINE__)
+                        .arg(departmentpopulate.lastError().databaseText()));
 }
 

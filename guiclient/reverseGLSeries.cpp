@@ -12,7 +12,6 @@
 
 #include <QVariant>
 #include <QMessageBox>
-#include "errorReporter.h"
 
 reverseGLSeries::reverseGLSeries(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
   : XDialog(parent, name, modal, fl)
@@ -67,8 +66,8 @@ enum SetResponse reverseGLSeries::set( const ParameterList & pParams )
     }
     else
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving GL Information"),
-                           reverseet, __FILE__, __LINE__);\
+      systemError( this, tr("A System Error occurred at reverseGLSeries::%1.")
+                       .arg(__LINE__) ); 
       return UndefinedError;
     }
   }
@@ -120,8 +119,8 @@ void reverseGLSeries::sPost()
                                 tr("Reversing Journal #%1 was sucessfully created.").arg(reversePost.value("result").toString()) );
   }
   else
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving GL Information"),
-                       reversePost, __FILE__, __LINE__);
+    systemError( this, tr("A System Error occurred at reverseGLSeries::%1.")
+                       .arg(__LINE__) ); 
   
   accept();
 }

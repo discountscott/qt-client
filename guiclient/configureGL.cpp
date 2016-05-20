@@ -16,7 +16,6 @@
 
 #include "configureEncryption.h"
 #include "guiclient.h"
-#include "errorReporter.h"
 
 configureGL::configureGL(QWidget* parent, const char* name, bool /*modal*/, Qt::WindowFlags fl)
     : XAbstractConfigure(parent, fl)
@@ -105,16 +104,14 @@ configureGL::configureGL(QWidget* parent, const char* name, bool /*modal*/, Qt::
   configureconfigureGL.exec("SELECT currentARMemoNumber() AS result;");
   if (configureconfigureGL.first())
     _nextARMemoNumber->setText(configureconfigureGL.value("result"));
-  else
-     ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Next AR Memo Number"),
-                       configureconfigureGL, __FILE__, __LINE__);
+  else if (configureconfigureGL.lastError().type() != QSqlError::NoError)
+    systemError(this, configureconfigureGL.lastError().databaseText(), __FILE__, __LINE__);
 
   configureconfigureGL.exec("SELECT currentCashRcptNumber() AS result;");
   if (configureconfigureGL.first())
     _nextCashRcptNumber->setText(configureconfigureGL.value("result"));
-  else
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Next Cash Receipt Number"),
-                                 configureconfigureGL, __FILE__, __LINE__);
+  else if (configureconfigureGL.lastError().type() != QSqlError::NoError)
+    systemError(this, configureconfigureGL.lastError().databaseText(), __FILE__, __LINE__);
 
   _hideApplyto->setChecked(_metrics->boolean("HideApplyToBalance"));
   _customerDeposits->setChecked(_metrics->boolean("EnableCustomerDeposits"));
@@ -196,7 +193,6 @@ configureGL::configureGL(QWidget* parent, const char* name, bool /*modal*/, Qt::
     default:
       _baseToLocal->setChecked(true);
   }
-  _fxChangeLog->setChecked(_metrics->boolean("FXChangeLog"));
 
   _mandatoryNotes->setChecked(_metrics->boolean("MandatoryGLEntryNotes"));
   _manualFwdUpdate->setChecked(_metrics->boolean("ManualForwardUpdate"));
@@ -288,9 +284,8 @@ configureGL::configureGL(QWidget* parent, const char* name, bool /*modal*/, Qt::
     _financeChargeAccount->setId(fcquery.value("fincharg_accnt_id").toInt());
     _salesCat->setId(fcquery.value("fincharg_salescat_id").toInt());
   }
-  else
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Finance Charge Information"),
-                    fcquery, __FILE__, __LINE__);
+  else if (fcquery.lastError().type() != QSqlError::NoError)
+    systemError(this, fcquery.lastError().databaseText(), __FILE__, __LINE__);
   
   adjustSize();
 }
@@ -705,9 +700,9 @@ bool configureGL::sSave()
   configureSave.prepare("SELECT setNextARMemoNumber(:armemo_number) AS result;");
   configureSave.bindValue(":armemo_number", _nextARMemoNumber->text().toInt());
   configureSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Setting Next AR Memo Number"),
-                      configureSave, __FILE__, __LINE__))
+  if (configureSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, configureSave.lastError().databaseText(), __FILE__, __LINE__);
     _nextARMemoNumber->setFocus();
     return false;
   }
@@ -715,9 +710,9 @@ bool configureGL::sSave()
   configureSave.prepare("SELECT setNextCashRcptNumber(:cashrcpt_number) AS result;");
   configureSave.bindValue(":cashrcpt_number", _nextCashRcptNumber->text().toInt());
   configureSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Setting Next AR Cash Receipt Number"),
-                      configureSave, __FILE__, __LINE__))
+  if (configureSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, configureSave.lastError().databaseText(), __FILE__, __LINE__);
     _nextCashRcptNumber->setFocus();
     return false;
   }
@@ -786,8 +781,8 @@ bool configureGL::sSave()
     XSqlQuery update;
     update.exec("UPDATE accnt SET accnt_profit=NULL,"
                 "                 accnt_sub=CASE WHEN (accnt_sub='') THEN NULL ELSE accnt_sub END;");
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Accounting Setup Information"),
-                      update, __FILE__, __LINE__);
+    if (update.lastError().type() != QSqlError::NoError)
+        systemError(this, update.lastError().databaseText(), __FILE__, __LINE__);
   }
 
   if (_useSubaccounts->isChecked())
@@ -806,8 +801,8 @@ bool configureGL::sSave()
     XSqlQuery update;
     update.exec("UPDATE accnt SET accnt_sub=NULL,"
                 "                 accnt_profit=CASE WHEN (accnt_profit='') THEN NULL ELSE accnt_profit END;");
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Accounting Setup Information"),
-                      update, __FILE__, __LINE__);
+    if (update.lastError().type() != QSqlError::NoError)
+        systemError(this, update.lastError().databaseText(), __FILE__, __LINE__);
   }
 
   _metrics->set("UseJournals", _journal->isChecked());
@@ -816,8 +811,6 @@ bool configureGL::sSave()
     _metrics->set("CurrencyExchangeSense", 1);
   else // if(_baseToLocal->isChecked())
     _metrics->set("CurrencyExchangeSense", 0);
-
-  _metrics->set("FXChangeLog", _fxChangeLog->isChecked());
 
   _metrics->set("MandatoryGLEntryNotes", _mandatoryNotes->isChecked());
   _metrics->set("ManualForwardUpdate", _manualFwdUpdate->isChecked());
@@ -894,9 +887,9 @@ bool configureGL::sSave()
     fcSave.bindValue(":salescat", _salesCat->id());
     fcSave.bindValue(":finchargid", _finchargid);
     fcSave.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Accounting Setup Information"),
-                                  fcSave, __FILE__, __LINE__))
+    if (fcSave.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, fcSave.lastError().databaseText(), __FILE__, __LINE__);
       return false;
     }
   }

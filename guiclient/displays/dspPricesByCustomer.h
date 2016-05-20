@@ -27,7 +27,6 @@ public:
 public slots:
     virtual SetResponse set(const ParameterList & pParams);
     virtual void sHandleCosts( bool pShowCosts );
-    virtual void sCustChanged(int custId );
 
 protected slots:
     virtual void languageChange();

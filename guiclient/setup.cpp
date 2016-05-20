@@ -7,7 +7,6 @@
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
  * to be bound by its terms.
  */
-#include <QDebug>
 #include <QBuffer>
 #include <QtUiTools/QUiLoader>
 #include <QMessageBox>
@@ -38,9 +37,7 @@ setup::setup(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
 {
   setupUi(this);
-  if (! name)
-    setObjectName("setup");
-    
+
   _modules->addItem(tr("All"), Xt::AllModules);
   _modules->addItem(tr("Accounting"), Xt::AccountingModule);
   _modules->addItem(tr("Sales"), Xt::SalesModule);
@@ -76,7 +73,6 @@ setup::setup(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
   insert(tr("Purchase"), "configurePO", Configure, Xt::PurchaseModule, mode("ConfigurePO"), 0 );
   insert(tr("Registration"), "registrationKey", Configure, Xt::SystemModule, mode("MaintainRegistrationKey"), 0 );
   insert(tr("Schedule"), "configureMS", Configure, Xt::ScheduleModule, mode("ConfigureMS"), 0 );
-  insert(tr("Workflow"), "configureWF", Configure, Xt::SystemModule, mode("ConfigureWF"), 0 );
   insert(tr("Search Path"), "configureSearchPath", Configure, Xt::SystemModule, _privileges->isDba() ? cEdit : 0, 0);
 
   // Account Mappings
@@ -180,9 +176,6 @@ setup::setup(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
 
   modeVal = mode("MaintainOpportunityTypes");
   insert(tr("Opportunity Types"), "opportunityTypes", MasterInformation, Xt::CRMModule, modeVal, modeVal);
-
-  modeVal = mode("MaintainProjectTypes");
-  insert(tr("Project Types"), "projectTypes", MasterInformation, Xt::CRMModule, modeVal, modeVal);
 
   modeVal = mode("MaintainPlannerCodes", "ViewPlannerCodes");
   insert(tr("Planner Codes"), "plannerCodes", MasterInformation, Xt::InventoryModule | Xt::ScheduleModule | Xt::PurchaseModule, modeVal, modeVal);
@@ -567,6 +560,7 @@ void setup::setCurrentIndex(XTreeWidgetItem* item)
         if (x)
           x->set(params);
       }
+
       int idx = _stack->count();
       _itemMap[uiName].index = idx;
       _stack->addWidget(w);

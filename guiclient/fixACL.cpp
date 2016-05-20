@@ -15,7 +15,6 @@
 #include <QSqlError>
 
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 bool fixACL::userHasPriv(const int /* ignored */)
 {
@@ -53,16 +52,15 @@ void fixACL::sFix()
     int result = fixFix.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Access Control Information"),
-                             storedProcErrorLookup("fixACL", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("fixACL", result),
+                  __FILE__, __LINE__);
       return;
     }
     _status->setText(tr("Done. %1 entities examined.").arg(result));
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Access Control Information"),
-                                fixFix, __FILE__, __LINE__))
+  else if (fixFix.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, fixFix.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

@@ -19,7 +19,7 @@
 #include "errorReporter.h"
 #include "guiErrorCheck.h"
 #include "mqlutil.h"
-#include "taxBreakdown.h"
+#include "taxDetail.h"
 #include "itemCharacteristicDelegate.h"
 #include "itemSourceSearch.h"
 #include "itemSourceList.h"
@@ -58,7 +58,6 @@ purchaseOrderItem::purchaseOrderItem(QWidget* parent, const char* name, bool mod
   connect(_listPrices, SIGNAL(clicked()), this, SLOT(sVendorListPrices()));
   connect(_taxLit, SIGNAL(leftClickedURL(QString)), this, SLOT(sTaxDetail()));  // new slot added for tax url //
   connect(_extendedPrice, SIGNAL(valueChanged()), this, SLOT(sCalculateTax()));  // new slot added for price //
-  connect(_freight, SIGNAL(valueChanged()), this, SLOT(sCalculateTax()));  // new slot added for line freight //
   connect(_taxtype, SIGNAL(newID(int)), this, SLOT(sCalculateTax()));            // new slot added for taxtype //
 
   _bomRevision->setMode(RevisionLineEdit::Use);
@@ -137,6 +136,10 @@ enum SetResponse purchaseOrderItem::set(const ParameterList &pParams)
   XDialog::set(pParams);
   QVariant param;
   bool     valid;
+  bool     haveQty  = false;
+  bool     haveDate = false;
+
+
 
   param = pParams.value("vend_id", &valid);
   if (valid)
@@ -225,8 +228,9 @@ enum SetResponse purchaseOrderItem::set(const ParameterList &pParams)
     }
     else
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Purchase Order Item Information"),
-                           purchaseet, __FILE__, __LINE__);
+      systemError(this, tr("A System Error occurred at %1::%2.")
+                        .arg(__FILE__)
+                        .arg(__LINE__) );
       return UndefinedError;
     }
   }
@@ -249,7 +253,7 @@ enum SetResponse purchaseOrderItem::set(const ParameterList &pParams)
     }
 
     populate();
-    sCalculateTax();
+	sCalculateTax();
   }
   // connect here and not in the .ui to avoid timing issues at initialization
   connect(_unitPrice, SIGNAL(valueChanged()), this, SLOT(sPopulateExtPrice()));
@@ -267,8 +271,9 @@ enum SetResponse purchaseOrderItem::set(const ParameterList &pParams)
         _poitemid = purchaseet.value("poitem_id").toInt();
       else
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Purchase Order Item Information"),
-                             purchaseet, __FILE__, __LINE__);
+        systemError(this, tr("A System Error occurred at %1::%2.")
+                          .arg(__FILE__)
+                          .arg(__LINE__) );
         return UndefinedError;
       }
 
@@ -309,8 +314,9 @@ enum SetResponse purchaseOrderItem::set(const ParameterList &pParams)
         _lineNumber->setText(purchaseet.value("_linenumber").toString());
       else
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Purchase Order Item Information"),
-                             purchaseet, __FILE__, __LINE__);
+        systemError(this, tr("A System Error occurred at %1::%2.")
+                          .arg(__FILE__)
+                          .arg(__LINE__) );
 
         return UndefinedError;
       }
@@ -318,7 +324,6 @@ enum SetResponse purchaseOrderItem::set(const ParameterList &pParams)
       _bomRevision->setEnabled(_privileges->boolean("UseInactiveRevisions"));
       _booRevision->setEnabled(_privileges->boolean("UseInactiveRevisions"));
       _comments->setId(_poitemid);
-      _project->setAllowedStatuses(ProjectLineEdit::Concept |  ProjectLineEdit::InProcess);
       _tab->setTabEnabled(_tab->indexOf(_demandTab), false);
     }
     else if (param.toString() == "edit")
@@ -372,12 +377,15 @@ enum SetResponse purchaseOrderItem::set(const ParameterList &pParams)
 
     if (_item->isValid())
       sDeterminePrice();
+
+    haveQty = true;
   }
 
   param = pParams.value("dueDate", &valid);
   if (valid)
   {
     _dueDate->setDate(param.toDate());
+    haveDate = true;
   }
 
   param = pParams.value("prj_id", &valid);
@@ -421,9 +429,9 @@ void purchaseOrderItem::populate()
   params.append("sonum",     tr("Sales Order #")),
   params.append("wonum",     tr("Work Order #")),
   purchasepopulate = mql.toQuery(params);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Purchase Order Item Information"),
-                                purchasepopulate, __FILE__, __LINE__))
+  if (purchasepopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, purchasepopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   if (purchasepopulate.first())
@@ -569,9 +577,9 @@ void purchaseOrderItem::prepare()
     _poitemid = prepareq.value("_poitem_id").toInt();
     _comments->setId(_poitemid);
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Purchase Order Item Information"),
-                                prepareq, __FILE__, __LINE__))
+  else if (prepareq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, prepareq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
         
@@ -582,9 +590,9 @@ void purchaseOrderItem::prepare()
   prepareq.exec();
   if (prepareq.first())
     _lineNumber->setText(prepareq.value("_linenumber").toString());
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Purchase Order Item Information"),
-                                prepareq, __FILE__, __LINE__))
+  else if (prepareq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, prepareq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -824,9 +832,9 @@ void purchaseOrderItem::sSave()
     purchaseSave.bindValue(":poitem_boo_rev_id", _booRevision->id());
   }
   purchaseSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Purchase Order Item Information"),
-                                         purchaseSave, __FILE__, __LINE__))
+  if (purchaseSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, purchaseSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -1247,48 +1255,41 @@ void purchaseOrderItem::sVendorListPrices()
 
 void purchaseOrderItem::sCalculateTax()
 {
-  QString sql("SELECT COALESCE(calculateTax(pohead_taxzone_id,<? value('taxtype_id') ?>,pohead_orderdate,pohead_curr_id,ROUND(<? value('ext') ?>,2)),0.00) + "
-                "       <? if exists('freight') ?> "
-                "       COALESCE(calculateTax(pohead_taxzone_id,getfreighttaxtypeid(),pohead_orderdate,pohead_curr_id,ROUND(COALESCE(<? value('freight') ?>,0.00),2)), 0.00) "
-                "       <? else ?> 0 <? endif ?> AS tax "
+  XSqlQuery calcq;
+
+  calcq.prepare("SELECT calculateTax(pohead_taxzone_id,:taxtype_id,pohead_orderdate,pohead_curr_id,ROUND(:ext,2)) AS tax "
                 "FROM pohead "
-                "WHERE (pohead_id=<? value('pohead_id') ?>); " );
+                "WHERE (pohead_id=:pohead_id); " );
 
-  MetaSQLQuery  mql(sql);
-  ParameterList params;
-  params.append("pohead_id", _poheadid);
-  params.append("taxtype_id", _taxtype->id());
-  params.append("ext", _extendedPrice->localValue());
-  if (_freight->localValue() > 0)
-    params.append("freight", _freight->localValue());
+  calcq.bindValue(":pohead_id", _poheadid);
+  calcq.bindValue(":taxtype_id", _taxtype->id());
+  calcq.bindValue(":ext", _extendedPrice->localValue());
 
-  XSqlQuery calcq = mql.toQuery(params);
+  calcq.exec();
   if (calcq.first())
     _tax->setLocalValue(calcq.value("tax").toDouble());
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("P/O Tax Calculation"),
-                         calcq, __FILE__, __LINE__))
+
+  else if (calcq.lastError().type() != QSqlError::NoError)
+  {
+    systemError(this, calcq.lastError().databaseText(), __FILE__, __LINE__);
     return;
+  } 
 }
 
-void purchaseOrderItem::sTaxDetail()
+void purchaseOrderItem::sTaxDetail()    // new function added from raitem
 {
-  if (_poitemid < 0)
-    return;
-
-  if (_mode == cNew)
-  {
-    QMessageBox::information( this, tr("Tax Breakdown"),
-                    tr("<p>Please save the Purchase Order Item before viewing the tax breakdown."));
-    return;
-  }
-
+  taxDetail newdlg(this, "", true);
   ParameterList params;
-  params.append("order_id", _poitemid);
-  params.append("order_type", "PI");
-  if (_mode == cView)
-    params.append("mode", "view");
+  params.append("taxzone_id",   _taxzoneid);
+  params.append("taxtype_id",  _taxtype->id());
+  params.append("date", _tax->effective());
+  params.append("curr_id", _tax->id());
+  params.append("subtotal", _extendedPrice->localValue());
+  //params.append("readOnly");
 
-  taxBreakdown newdlg(this, "", true);
-  newdlg.set(params);
-  newdlg.exec();
+  if (newdlg.set(params) == NoError && newdlg.exec())
+  {
+    if (_taxtype->id() != newdlg.taxtype())
+      _taxtype->setId(newdlg.taxtype());
+  }
 }

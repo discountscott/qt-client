@@ -18,7 +18,6 @@
 #include "distributeInventory.h"
 #include "inputManager.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 scrapTrans::scrapTrans(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -112,10 +111,10 @@ enum SetResponse scrapTrans::set(const ParameterList &pParams)
         _notes->setText(scrapet.value("invhist_comments").toString());
         _item->setItemsiteid(scrapet.value("invhist_itemsite_id").toInt());
       }
-      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Inventory History Information"),
-                                    scrapet, __FILE__, __LINE__))
+      else if (scrapet.lastError().type() != QSqlError::NoError)
       {
-        return UndefinedError;
+	systemError(this, scrapet.lastError().databaseText(), __FILE__, __LINE__);
+	return UndefinedError;
       }
 
     }
@@ -173,16 +172,14 @@ void scrapTrans::sPost()
     if (result < 0)
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Scrap Transaction"),
-                               storedProcErrorLookup("invScrap", result),
-                               __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("invScrap", result),
+                  __FILE__, __LINE__);
       return;
     }
     else if (scrapPost.lastError().type() != QSqlError::NoError)
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Scrap Transaction"),
-                           scrapPost, __FILE__, __LINE__);
+      systemError(this, scrapPost.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -215,19 +212,16 @@ void scrapTrans::sPost()
   else if (scrapPost.lastError().type() != QSqlError::NoError)
   {
     rollback.exec();
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Scrap Transaction"),
-                         scrapPost, __FILE__, __LINE__);
+    systemError(this, scrapPost.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   else
   {
     rollback.exec();
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                         tr("%1: Transaction Not Completed Due to Item:[%2] "
-                            "not found at Site:[%3].")
-                         .arg(windowTitle())
-                         .arg(_item->itemNumber())
-                         .arg(_warehouse->currentText()),__FILE__,__LINE__);
+    systemError( this,
+                tr("<p>No transaction was done because Item %1 "
+                   "was not found at Site %2.")
+                .arg(_item->itemNumber()).arg(_warehouse->currentText()));
   }
 }
 
@@ -255,9 +249,9 @@ void scrapTrans::sPopulateQOH(int pWarehousid)
 
       sPopulateQty();
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Information"),
-                                  scrapPopulateQOH, __FILE__, __LINE__))
+    else if (scrapPopulateQOH.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, scrapPopulateQOH.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }

@@ -22,12 +22,12 @@
 
 #include "addresscluster.h"
 #include "contact.h"
+#include "inputManager.h"
 #include "mqlutil.h"
 #include "shipTo.h"
 #include "vendor.h"
 #include "vendorAddress.h"
 #include "warehouse.h"
-#include "errorReporter.h"
 
 address::address(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -88,10 +88,11 @@ enum SetResponse address::set(const ParameterList &pParams)
       int addrSaveResult = _addr->save(AddressCluster::CHANGEONE);
       if (addrSaveResult < 0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Address"),
-                  tr("There was an error creating a new address (%1).\n"
-                     "Check the database server log for errors.") .arg(addrSaveResult), __FILE__, __LINE__);
-        return UndefinedError;
+	systemError(this, tr("There was an error creating a new address (%).\n"
+			     "Check the database server log for errors.")
+			  .arg(addrSaveResult),
+		    __FILE__, __LINE__);
+	return UndefinedError;
       }
       _comments->setId(_addr->id());
       _charass->setId(_addr->id());
@@ -147,9 +148,10 @@ void address::internalSave(AddressCluster::SaveFlags flag)
   }
   if (0 > saveResult)	// NOT else if
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Address"),
-              tr("There was an error saving this address (%1).\n"
-                 "Check the database server log for errors.") .arg(saveResult), __FILE__, __LINE__);
+    systemError(this, tr("There was an error saving this address (%1).\n"
+			 "Check the database server log for errors.")
+		      .arg(saveResult),
+		__FILE__, __LINE__);
   }
 }
 
@@ -163,10 +165,10 @@ void address::reject()
     rejectAddress.bindValue(":addr_id", _addr->id());
     rejectAddress.bindValue(":number", _addr->number().toInt());
     rejectAddress.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Rejecting Address"),
-                                  rejectAddress, __FILE__, __LINE__))
+    if (rejectAddress.lastError().type() != QSqlError::NoError)
     {
-        return;
+      systemError(this, rejectAddress.lastError().databaseText(), __FILE__, __LINE__);
+      return;
     }
   }
 
@@ -194,6 +196,7 @@ void address::sPopulate()
 
 void address::sPopulateMenu(QMenu *pMenu)
 {
+  QAction *menuItem;
   QString editStr = tr("Edit...");
   QString viewStr = tr("View...");
 
@@ -202,18 +205,18 @@ void address::sPopulateMenu(QMenu *pMenu)
     case 1:
       if (_privileges->check("MaintainAllContacts") &&
 	  (cNew == _mode || cEdit == _mode))
-    (void)pMenu->addAction(editStr, this, SLOT(sEditContact()));
+	menuItem = pMenu->addAction(editStr, this, SLOT(sEditContact()));
       else if (_privileges->check("ViewAllContacts"))
-    (void)pMenu->addAction(viewStr, this, SLOT(sViewContact()));
+	menuItem = pMenu->addAction(viewStr, this, SLOT(sViewContact()));
 
       break;
 
     case 2:	// ship-to
       if (_privileges->check("MaintainShiptos") &&
 	  (cNew == _mode || cEdit == _mode))
-    (void)pMenu->addAction(editStr, this, SLOT(sEditShipto()));
+	menuItem = pMenu->addAction(editStr, this, SLOT(sEditShipto()));
       else if (_privileges->check("ViewShiptos"))
-    (void)pMenu->addAction(viewStr, this, SLOT(sViewShipto()));
+	menuItem = pMenu->addAction(viewStr, this, SLOT(sViewShipto()));
 
       break;
 
@@ -231,18 +234,18 @@ void address::sPopulateMenu(QMenu *pMenu)
     case 4:	// vendaddr
       if (_privileges->check("MaintainVendorAddresses") &&
 	  (cNew == _mode || cEdit == _mode))
-    (void)pMenu->addAction(editStr, this, SLOT(sEditVendorAddress()));
+	menuItem = pMenu->addAction(editStr, this, SLOT(sEditVendorAddress()));
       else if (_privileges->check("ViewVendorAddresses"))
-    (void)pMenu->addAction(viewStr, this, SLOT(sViewVendorAddress()));
+	menuItem = pMenu->addAction(viewStr, this, SLOT(sViewVendorAddress()));
 
       break;
 
     case 5:	// warehouse
       if (_privileges->check("MaintainWarehouses") &&
 	  (cNew == _mode || cEdit == _mode))
-    (void)pMenu->addAction(editStr, this, SLOT(sEditWarehouse()));
+	menuItem = pMenu->addAction(editStr, this, SLOT(sEditWarehouse()));
       else if (_privileges->check("ViewWarehouses"))
-    (void)pMenu->addAction(viewStr, this, SLOT(sViewWarehouse()));
+	menuItem = pMenu->addAction(viewStr, this, SLOT(sViewWarehouse()));
 
       break;
 

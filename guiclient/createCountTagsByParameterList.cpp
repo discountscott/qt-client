@@ -16,7 +16,6 @@
 
 #include <metasql.h>
 #include "mqlutil.h"
-#include "errorReporter.h"
 
 createCountTagsByParameterList::createCountTagsByParameterList(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -106,9 +105,9 @@ void createCountTagsByParameterList::sCreate()
     if (createq.value(0).toInt() > 0)
       count++;
   }
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Count Tag Information"),
-                                createq, __FILE__, __LINE__))
+  if (createq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, createq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 

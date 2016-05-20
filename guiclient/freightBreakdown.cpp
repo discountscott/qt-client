@@ -14,7 +14,6 @@
 #include <QVariant>
 
 #include <metasql.h>
-#include "errorReporter.h"
 
 freightBreakdown::freightBreakdown(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
   : XDialog(parent, name, modal, fl)
@@ -133,9 +132,9 @@ SetResponse freightBreakdown::set(const ParameterList& pParams)
   MetaSQLQuery mql(sql);
   freightet = mql.toQuery(params);
   _freight->populate(freightet);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Freight Information"),
-                                freightet, __FILE__, __LINE__))
+  if (freightet.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, freightet.lastError().databaseText(), __FILE__, __LINE__);
     return UndefinedError;
   }
 

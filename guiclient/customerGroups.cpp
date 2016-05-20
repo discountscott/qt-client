@@ -10,7 +10,6 @@
 
 #include "customerGroups.h"
 
-#include <QMessageBox>
 #include <QSqlError>
 #include <QVariant>
 
@@ -58,12 +57,6 @@ void customerGroups::languageChange()
 
 void customerGroups::sDelete()
 {
-  if (QMessageBox::question(this, tr("Delete?"),
-                            tr("Are you sure you want to delete this Customer Group?"),
-                            QMessageBox::Yes,
-                            QMessageBox::No | QMessageBox::Default) == QMessageBox::No)
-    return;
-  
   XSqlQuery customerDelete;
   customerDelete.prepare( "DELETE FROM custgrpitem "
              "WHERE (custgrpitem_custgrp_id=:custgrp_id); "

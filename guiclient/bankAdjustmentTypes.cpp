@@ -20,7 +20,6 @@
 
 #include "bankAdjustmentType.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 bankAdjustmentTypes::bankAdjustmentTypes(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -109,15 +108,15 @@ void bankAdjustmentTypes::sDelete()
     int result = bankDelete.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Adjustment Type"),
-                          storedProcErrorLookup("bankDelete", result),
-                           __FILE__, __LINE__);
+      systemError(this,
+		  storedProcErrorLookup("deleteBankAdjustmentType", result),
+		  __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Adjustment Type"),
-                                bankDelete, __FILE__, __LINE__))
+  else if (bankDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, bankDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 

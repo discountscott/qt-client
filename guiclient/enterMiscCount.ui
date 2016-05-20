@@ -317,7 +317,6 @@ to be bound by its terms.</comment>
    <class>ItemCluster</class>
    <extends>QWidget</extends>
    <header>itemcluster.h</header>
-   <container>1</container>
   </customwidget>
   <customwidget>
    <class>WComboBox</class>
@@ -333,7 +332,6 @@ to be bound by its terms.</comment>
    <class>XLineEdit</class>
    <extends>QLineEdit</extends>
    <header>xlineedit.h</header>
-   <container>1</container>
   </customwidget>
   <customwidget>
    <class>XTextEdit</class>

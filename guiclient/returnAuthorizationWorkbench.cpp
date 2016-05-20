@@ -25,7 +25,6 @@
 #include "returnAuthorization.h"
 #include "returnAuthCheck.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 returnAuthorizationWorkbench::returnAuthorizationWorkbench(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -250,9 +249,7 @@ void returnAuthorizationWorkbench::sProcess()
     int cmheadid = returnProcess.value("result").toInt();
     if (cmheadid < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving RA Credit Memo Information"),
-                             storedProcErrorLookup("createRaCreditMemo", cmheadid),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("createRaCreditMemo", cmheadid), __FILE__, __LINE__);
       return;
     }
     returnProcess.prepare( "SELECT cmhead_number "
@@ -336,11 +333,11 @@ void returnAuthorizationWorkbench::sProcess()
 	  // requery regardless 'cause the new return means nothing's "due"
 	  sFillListDue();
 	}
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving RA Information"),
-                                  ccq, __FILE__, __LINE__))
-    {
-      return;
-    }
+	else if (ccq.lastError().type() != QSqlError::NoError)
+	{
+	  systemError(this, ccq.lastError().databaseText(), __FILE__, __LINE__);
+	  return;
+	}
 	else
 	{
 	  QMessageBox::critical(this, tr("Credit Card Processing Error"),
@@ -353,15 +350,15 @@ void returnAuthorizationWorkbench::sProcess()
       else
 	sFillListDue();
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving RA Information"),
-                                           returnProcess, __FILE__, __LINE__))
+    else if (returnProcess.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, returnProcess.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving RA Information"),
-                                           returnProcess, __FILE__, __LINE__))
+  else if (returnProcess.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, returnProcess.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -451,9 +448,9 @@ void returnAuthorizationWorkbench::sFillListReview()
 
     XSqlQuery rareview = mql.toQuery(params);
     _ra->populate(rareview);
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving RA Information"),
-                                           rareview, __FILE__, __LINE__))
+    if (rareview.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, rareview.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -472,9 +469,9 @@ void returnAuthorizationWorkbench::sFillListDue()
 
     XSqlQuery radue = mql.toQuery(params);
     _radue->populate(radue,true);
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving RA Information"),
-                                           radue, __FILE__, __LINE__))
+    if (radue.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, radue.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }

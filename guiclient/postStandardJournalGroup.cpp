@@ -13,7 +13,6 @@
 #include <QVariant>
 #include <QMessageBox>
 #include "glSeries.h"
-#include "errorReporter.h"
 
 postStandardJournalGroup::postStandardJournalGroup(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -93,8 +92,9 @@ void postStandardJournalGroup::sPost()
     newdlg.exec();
   }
   else
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Standard Journal Group"),
-                       postPost, __FILE__, __LINE__);
+    systemError(this, tr("A System Error occurred at %1::%2.")
+                      .arg(__FILE__)
+                      .arg(__LINE__) );
 
   if (_captive)
     accept();

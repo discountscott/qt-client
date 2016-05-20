@@ -14,7 +14,6 @@
 #include "xsqlquery.h"
 #include <QSqlError>
 #include <QMessageBox>
-#include "errorReporter.h"
 
 quickRelocateLot::quickRelocateLot(QWidget *parent, const char *name, bool modal, Qt::WindowFlags f1)
     : XDialog(parent, name, modal, f1)
@@ -60,9 +59,9 @@ void quickRelocateLot::sFillList()
   _itemloc->clear();
   _itemloc->populate(lotQuery);
   _itemloc->selectAll();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Lot Information"),
-                                lotQuery, __FILE__, __LINE__))
+  if (lotQuery.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, lotQuery.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -100,9 +99,9 @@ void quickRelocateLot::sPost()
     {
         ls_id = lotQuery.value("ls_id").toInt();
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Lot Information"),
-                                  lotQuery, __FILE__, __LINE__))
+    else if (lotQuery.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, lotQuery.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -126,9 +125,9 @@ void quickRelocateLot::sPost()
     {
         location_id = locationQuery.value("location_id").toInt();
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Location Information"),
-                                  locationQuery, __FILE__, __LINE__))
+    else if (locationQuery.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, locationQuery.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -151,9 +150,9 @@ void quickRelocateLot::sPost()
     {
         qoh = qohQuery.value("itemloc_qty").toInt();
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Lot/Quantity Information"),
-                                  qohQuery, __FILE__, __LINE__))
+    else if (qohQuery.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, qohQuery.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -177,9 +176,9 @@ void quickRelocateLot::sPost()
     updateQuery.bindValue(":ls_id", ls_id);
     updateQuery.bindValue(":itemsite_id", itemsite_id);
     updateQuery.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Lot Information"),
-                                  updateQuery, __FILE__, __LINE__))
+    if (qohQuery.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, qohQuery.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   

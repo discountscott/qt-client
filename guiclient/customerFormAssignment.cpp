@@ -13,7 +13,6 @@
 #include <QMessageBox>
 #include <QSqlError>
 #include <QVariant>
-#include "errorReporter.h"
 
 customerFormAssignment::customerFormAssignment(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -108,9 +107,9 @@ void customerFormAssignment::sSave()
     customerSave.exec("SELECT NEXTVAL('custform_custform_id_seq') AS _custformid");
     if (customerSave.first())
       _custformid = customerSave.value("_custformid").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Form Assignment"),
-                                  customerSave, __FILE__, __LINE__))
+    else if (customerSave.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, customerSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -146,9 +145,9 @@ void customerFormAssignment::sSave()
   customerSave.bindValue(":custform_packinglist_report_name", _packingListForm->code());
   customerSave.bindValue(":custform_sopicklist_report_name", _soPickListForm->code());
   customerSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Form Assignment"),
-                                customerSave, __FILE__, __LINE__))
+  if (customerSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, customerSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -179,22 +178,16 @@ void customerFormAssignment::populate()
       _customerTypes->setId(customerpopulate.value("custform_custtype_id").toInt());
     }
 
-    if (customerpopulate.value("custform_invoice_report_name").toString() != NULL)
-      _invoiceForm->setCode(customerpopulate.value("custform_invoice_report_name").toString());
-    if (customerpopulate.value("custform_creditmemo_report_name").toString() != NULL)
-      _creditMemoForm->setCode(customerpopulate.value("custform_creditmemo_report_name").toString());
-    if (customerpopulate.value("custform_statement_report_name").toString() != NULL)
-      _statementForm->setCode(customerpopulate.value("custform_statement_report_name").toString());
-    if (customerpopulate.value("custform_quote_report_name").toString() != NULL)
-      _quoteForm->setCode(customerpopulate.value("custform_quote_report_name").toString());
-    if (customerpopulate.value("custform_packinglist_report_name").toString() != NULL)
-      _packingListForm->setCode(customerpopulate.value("custform_packinglist_report_name").toString());
-    if (customerpopulate.value("custform_sopicklist_report_name").toString() != NULL)
-      _soPickListForm->setCode(customerpopulate.value("custform_sopicklist_report_name").toString());
+    _invoiceForm->setCode(customerpopulate.value("custform_invoice_report_name").toString());
+    _creditMemoForm->setCode(customerpopulate.value("custform_creditmemo_report_name").toString());
+    _statementForm->setCode(customerpopulate.value("custform_statement_report_name").toString());
+    _quoteForm->setCode(customerpopulate.value("custform_quote_report_name").toString());
+    _packingListForm->setCode(customerpopulate.value("custform_packinglist_report_name").toString());
+    _soPickListForm->setCode(customerpopulate.value("custform_sopicklist_report_name").toString());
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Form Assignment Information"),
-                                customerpopulate, __FILE__, __LINE__))
+  else if (customerpopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, customerpopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

@@ -16,7 +16,6 @@
 #include <parameter.h>
 //#include <QWorkspace>
 #include "taxRegistration.h"
-#include "errorReporter.h"
 
 taxRegistrations::taxRegistrations(QWidget* parent, const char* name, Qt::WindowFlags fl)
   : XWidget(parent, name, fl)
@@ -101,9 +100,9 @@ void taxRegistrations::sDelete()
             " WHERE (taxreg_id=:taxreg_id);");
   taxDelete.bindValue(":taxreg_id", _taxreg->id());
   taxDelete.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Tax Registration Information"),
-                                taxDelete, __FILE__, __LINE__))
+  if (taxDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, taxDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   sFillList();
@@ -124,9 +123,9 @@ void taxRegistrations::sFillList()
 			" ORDER BY taxzone_code, taxauth_code, taxreg_number;");
   taxFillList.exec();
   _taxreg->populate(taxFillList, true);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Tax Registration Information"),
-                                taxFillList, __FILE__, __LINE__))
+  if (taxFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, taxFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

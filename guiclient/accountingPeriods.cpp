@@ -16,7 +16,6 @@
 #include <QMessageBox>
 
 #include <openreports.h>
-#include "errorReporter.h"
 
 #include "accountingPeriod.h"
 #include "storedProcErrorLookup.h"
@@ -160,17 +159,15 @@ void accountingPeriods::sDelete()
     int result = deleteAccounting.value("result").toInt();
     if (result < 0)
     {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Period Number"),
-                             storedProcErrorLookup("deleteAccountingPeriod", result),
-                             __FILE__, __LINE__);
-        return;
+      systemError(this, storedProcErrorLookup("deleteAccountingPeriod",
+						       result));
+      return;
     }
   }
-
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Period Number"),
-                                deleteAccounting, __FILE__, __LINE__))
+  else if (deleteAccounting.lastError().type() != QSqlError::NoError)
   {
-      return;
+    systemError(this, deleteAccounting.lastError().databaseText(), __FILE__, __LINE__);
+    return;
   }
   sFillList();
 }
@@ -186,17 +183,17 @@ void accountingPeriods::sClosePeriod()
     int result = closeAccounting.value("result").toInt();
     if (result < 0)
     {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Closing Period"),
-                             storedProcErrorLookup("closeAccountingPeriod", result),
-                             __FILE__, __LINE__);
-        return;
+      systemError(this, storedProcErrorLookup("closeAccountingPeriod", result),
+		  __FILE__, __LINE__);
+      return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Closing Period"),
-                                closeAccounting, __FILE__, __LINE__))
+  else if (closeAccounting.lastError().type() != QSqlError::NoError)
   {
-      return;
+    systemError(this, closeAccounting.lastError().databaseText(), __FILE__, __LINE__);
+    return;
   }
+
   sFillList();
 }
 
@@ -227,10 +224,10 @@ void accountingPeriods::sOpenPeriod()
       reallyOpen = (newdlg.exec() == XDialog::Accepted);
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Opening Period"),
-                                openAccounting, __FILE__, __LINE__))
+  else if (openAccounting.lastError().type() != QSqlError::NoError)
   {
-      return;
+    systemError(this, openAccounting.lastError().databaseText(), __FILE__, __LINE__);
+    return;
   }
 
   if (reallyOpen)
@@ -243,17 +240,17 @@ void accountingPeriods::sOpenPeriod()
       int result = openAccounting.value("result").toInt();
       if (result < 0)
       {
-          ErrorReporter::error(QtCriticalMsg, this, tr("Error Opening Period"),
-                               storedProcErrorLookup("openAccountingPeriod", result),
-                               __FILE__, __LINE__);
-          return;
+	systemError(this, storedProcErrorLookup("openAccountingPeriod", result),
+		    __FILE__, __LINE__);
+	return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Opening Period"),
-                                  openAccounting, __FILE__, __LINE__))
+    else if (openAccounting.lastError().type() != QSqlError::NoError)
     {
-        return;
+      systemError(this, openAccounting.lastError().databaseText(), __FILE__, __LINE__);
+      return;
     }
+
     sFillList();
   }
 }
@@ -269,17 +266,17 @@ void accountingPeriods::sFreezePeriod()
     int result = freezeAccounting.value("result").toInt();
     if (result < 0)
     {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Freezing Period"),
-                             storedProcErrorLookup("freezeAccountingPeriod", result),
-                             __FILE__, __LINE__);
-        return;
+      systemError(this, storedProcErrorLookup("freezeAccountingPeriod", result),
+		  __FILE__, __LINE__);
+      return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Freezing Period"),
-                                freezeAccounting, __FILE__, __LINE__))
+  else if (freezeAccounting.lastError().type() != QSqlError::NoError)
   {
-      return;
+    systemError(this, freezeAccounting.lastError().databaseText(), __FILE__, __LINE__);
+    return;
   }
+
   sFillList();
 }
 
@@ -294,17 +291,17 @@ void accountingPeriods::sThawPeriod()
     int result = thawAccounting.value("result").toInt();
     if (result < 0)
     {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Thawing Period"),
-                             storedProcErrorLookup("thawAccountingPeriod", result),
-                             __FILE__, __LINE__);
-        return;
+      systemError(this, storedProcErrorLookup("thawAccountingPeriod", result),
+		  __FILE__, __LINE__);
+      return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Thawing Period2"),
-                                thawAccounting, __FILE__, __LINE__))
+  else if (thawAccounting.lastError().type() != QSqlError::NoError)
   {
-      return;
+    systemError(this, thawAccounting.lastError().databaseText(), __FILE__, __LINE__);
+    return;
   }
+
   sFillList();
 }
 
@@ -343,10 +340,10 @@ void accountingPeriods::sFillList()
     periodsList.bindValue(":fiscalYear", _year->id());
     periodsList.exec();
     
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Getting Periods"),
-                                  periodsList, __FILE__, __LINE__))
+    if (periodsList.lastError().type() != QSqlError::NoError)
     {
-        return;
+      systemError(this, periodsList.lastError().databaseText(), __FILE__, __LINE__);
+      return;
     }
 
   _period->clear();

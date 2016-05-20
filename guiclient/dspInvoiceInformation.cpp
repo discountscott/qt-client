@@ -19,7 +19,6 @@
 #include <invoiceList.h>
 #include <metasql.h>
 #include "mqlutil.h"
-#include "errorReporter.h"
 
 
 dspInvoiceInformation::dspInvoiceInformation(QWidget* parent, const char* name, Qt::WindowFlags fl)
@@ -154,8 +153,7 @@ void dspInvoiceInformation::sParseInvoiceNumber()
   else
   {
     if (dspParseInvoiceNumber.lastError().type() != QSqlError::NoError)
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Invoice Information"),
-                         dspParseInvoiceNumber, __FILE__, __LINE__);
+      systemError(this, dspParseInvoiceNumber.lastError().databaseText(), __FILE__, __LINE__);
     _print->setEnabled(false);
     _view->setEnabled(false);
     _invoiceNumber->clear();

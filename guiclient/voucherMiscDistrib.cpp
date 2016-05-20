@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2015 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -19,11 +19,8 @@ voucherMiscDistrib::voucherMiscDistrib(QWidget* parent, const char* name, bool m
 {
   setupUi(this);
 
-  connect(_save,            SIGNAL(clicked()),     this, SLOT(sSave()));
-  connect(_taxCode,         SIGNAL(newID(int)),    this, SLOT(sCheck()));
-  connect(_accountSelected, SIGNAL(toggled(bool)), this, SLOT(sHandleSelection()));
-  connect(_expcatSelected,  SIGNAL(toggled(bool)), this, SLOT(sHandleSelection()));
-  connect(_taxSelected,     SIGNAL(toggled(bool)), this, SLOT(sHandleSelection()));
+  connect(_save, SIGNAL(clicked()), this, SLOT(sSave()));
+  connect(_taxCode, SIGNAL(newID(int)), this, SLOT(sCheck()));
   
   _account->setType(GLCluster::cRevenue | GLCluster::cExpense |
                     GLCluster::cAsset | GLCluster::cLiability);
@@ -112,12 +109,8 @@ void voucherMiscDistrib::populate()
     }
     if(vpopulateVoucher.value("vodist_tax_id").toInt() != -1)
     {
-      _taxSelected->setChecked(true);
-      _taxCode->setId(vpopulateVoucher.value("vodist_tax_id").toInt());
-    }
-    if(vpopulateVoucher.value("vodist_taxtype_id").toInt() > 0)
-    {
-      _taxType->setId(vpopulateVoucher.value("vodist_taxtype_id").toInt());
+	   _taxSelected->setChecked(true);
+	   _taxCode->setId(vpopulateVoucher.value("vodist_tax_id").toInt());
     }
   }
 }
@@ -165,11 +158,11 @@ void voucherMiscDistrib::sSave()
     saveVoucher.prepare( "INSERT INTO vodist "
                "( vodist_id, vodist_vohead_id, vodist_poitem_id,"
                "  vodist_costelem_id, vodist_accnt_id, vodist_amount, vodist_discountable,"
-               "  vodist_expcat_id, vodist_tax_id, vodist_notes, vodist_taxtype_id ) "
+               "  vodist_expcat_id, vodist_tax_id, vodist_notes ) "
                "VALUES "
                "( :vodist_id, :vodist_vohead_id, -1,"
                "  -1, :vodist_accnt_id, :vodist_amount, :vodist_discountable,"
-               "  :vodist_expcat_id, :vodist_tax_id, :vodist_notes, :vodist_taxtype_id );" );
+               "  :vodist_expcat_id, :vodist_tax_id, :vodist_notes );" );
   }
   else if (_mode == cEdit)
     saveVoucher.prepare( "UPDATE vodist "
@@ -178,8 +171,7 @@ void voucherMiscDistrib::sSave()
                "    vodist_discountable=:vodist_discountable,"
                "    vodist_expcat_id=:vodist_expcat_id, "
                "    vodist_tax_id = :vodist_tax_id, "
-               "    vodist_notes=:vodist_notes, "
-               "    vodist_taxtype_id=:vodist_taxtype_id "
+			   "    vodist_notes=:vodist_notes "
                "WHERE (vodist_id=:vodist_id);" );
   
   saveVoucher.bindValue(":vodist_id", _vodistid);
@@ -187,8 +179,6 @@ void voucherMiscDistrib::sSave()
   saveVoucher.bindValue(":vodist_amount", _amount->localValue());
   saveVoucher.bindValue(":vodist_discountable", QVariant(_discountable->isChecked()));
   saveVoucher.bindValue(":vodist_notes", _notes->toPlainText().trimmed());
-  if(_taxType->isValid())
-    saveVoucher.bindValue(":vodist_taxtype_id", _taxType->id());
   if(_accountSelected->isChecked())
   {
     saveVoucher.bindValue(":vodist_accnt_id", _account->id());
@@ -293,10 +283,3 @@ void voucherMiscDistrib::sPopulateVendorInfo(int pVendid)
   }
 }
 
-void voucherMiscDistrib::sHandleSelection()
-{
-  _taxTypeLit->setEnabled(_accountSelected->isChecked() || _expcatSelected->isChecked());
-  _taxType->setEnabled(_accountSelected->isChecked() || _expcatSelected->isChecked());
-  _discountable->setEnabled(_accountSelected->isChecked() || _expcatSelected->isChecked());
-  _discountable->setChecked(_accountSelected->isChecked() || _expcatSelected->isChecked());
-}

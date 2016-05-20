@@ -20,7 +20,6 @@
 #include <openreports.h>
 #include "storedProcErrorLookup.h"
 #include "xtreewidget.h"
-#include "errorReporter.h"
 
 assessFinanceCharges::assessFinanceCharges(QWidget* parent, const char* name, Qt::WindowFlags fl)
 : XWidget(parent, name, fl)
@@ -93,15 +92,15 @@ void assessFinanceCharges::sAssessCharges()
       int result = arAssessCharges.value("result").toInt();
       if (result < 0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Assessing Finance Charges"),
-                             storedProcErrorLookup("assessFinanceCharge", result),
-                             __FILE__, __LINE__);
+        systemError(this, storedProcErrorLookup("assessFinanceCharge", result),
+                    __FILE__, __LINE__);
+        arAssessCharges.exec("ROLLBACK;");
         return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Assessing Finance Charges"),
-                                  arAssessCharges, __FILE__, __LINE__))
+    else if (arAssessCharges.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, arAssessCharges.lastError().databaseText(), __FILE__, __LINE__);
       arAssessCharges.exec("ROLLBACK;");
       return;
     }

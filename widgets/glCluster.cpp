@@ -303,7 +303,7 @@ bool GLCluster::projectVisible()
   return _project->isVisible();
 }
 
-void GLCluster::setId(const int p, const QString&)
+void GLCluster::setId(const int p)
 {
   int id = p;
 

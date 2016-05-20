@@ -58,8 +58,6 @@ void dspTimePhasedUsageStatisticsByItem::sViewTransactions()
       params.append("transtype", "SC");
     else if (type == "Adjustments")
       params.append("transtype", "A");
-    else if (type == "Transfers")
-      params.append("transtype", "T");
 
     dspInventoryHistory *newdlg = new dspInventoryHistory();
     newdlg->set(params);
@@ -87,11 +85,6 @@ bool dspTimePhasedUsageStatisticsByItem::setParamsTP(ParameterList & params)
   params.append("sold", tr("Sold"));
   params.append("scrap", tr("Scrap"));
   params.append("adjustments", tr("Adjustments"));
-  if (_metrics->boolean("MultiWhs"))
-  {
-    params.append("MultiWhs");
-    params.append("transfers", tr("Transfers"));
-  }
 
   return true;
 }

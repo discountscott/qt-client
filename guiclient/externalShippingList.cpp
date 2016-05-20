@@ -10,7 +10,6 @@
 
 #include "externalShipping.h"
 #include "externalShippingList.h"
-#include "errorReporter.h"
 
 bool externalShippingList::userHasPriv()
 {
@@ -50,9 +49,9 @@ void externalShippingList::setVisible(bool visible)
     XWidget::setVisible(false);
   else if (!userHasPriv())
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Privileges Error"),
-                         tr("%1: Insufficient Privileges to View/Edit External "
-                            "Shipping Records").arg(windowTitle()),__FILE__,__LINE__);
+    systemError(this,
+	        tr("You do not have sufficient privilege to view this window."),
+		__FILE__, __LINE__);
     close();
   }
   else

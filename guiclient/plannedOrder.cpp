@@ -219,9 +219,9 @@ void plannedOrder::sCreate()
   plannedCreate.bindValue(":planord_id", _planordid);
 
   plannedCreate.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Creating Planned Order"),
-                                plannedCreate, __FILE__, __LINE__))
+  if (plannedCreate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, plannedCreate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -235,17 +235,15 @@ void plannedOrder::sCreate()
       double result = plannedCreate.value("result").toDouble();
       if (result < 0.0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                             tr("%1: ExplodePlannedOrder returned %2, indicating an "
-                                "error occurred")
-                             .arg(windowTitle())
-                             .arg(result),__FILE__,__LINE__);
+        systemError(this, tr("ExplodePlannedOrder returned %, indicating an "
+                             "error occurred.").arg(result),
+                    __FILE__, __LINE__);
         return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Creating Planned Order"),
-                                  plannedCreate, __FILE__, __LINE__))
+    else if (plannedCreate.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, plannedCreate.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -253,8 +251,9 @@ void plannedOrder::sCreate()
   {
     if (!plannedCreate.first())
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Creating Planned Order"),
-                           plannedCreate, __FILE__, __LINE__);
+      systemError( this, tr("A System Error occurred at %1::%2.")
+                         .arg(__FILE__)
+                         .arg(__LINE__) );
       return;
     }
 
@@ -327,9 +326,9 @@ void plannedOrder::populate()
       _fromWarehouse->setId(planord.value("supplywarehousid").toInt());
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Planned Order Information"),
-                                planord, __FILE__, __LINE__))
+  else if (planord.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, planord.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -357,8 +356,9 @@ void plannedOrder::sUpdateStartDate()
   if (startDate.first())
     _startDate->setDate(startDate.value("startdate").toDate());
   else
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Setting Start Date"),
-                           startDate, __FILE__, __LINE__);
+    systemError(this, tr("A System Error occurred at %1::%2.")
+                      .arg(__FILE__)
+                      .arg(__LINE__) );
 }
 
 void plannedOrder::sHandleItemsite(int pWarehousid)
@@ -379,8 +379,7 @@ void plannedOrder::sHandleItemsite(int pWarehousid)
   plannedHandleItemsite.exec();
   if (!plannedHandleItemsite.first())
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Site Information"),
-                         plannedHandleItemsite, __FILE__, __LINE__);
+    systemError(this, plannedHandleItemsite.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -426,8 +425,7 @@ void plannedOrder::sHandleItemsite(int pWarehousid)
   plannedHandleItemsite.exec();
   if (!plannedHandleItemsite.first())
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Site Information"),
-                         plannedHandleItemsite, __FILE__, __LINE__);
+    systemError(this, plannedHandleItemsite.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -446,8 +444,7 @@ void plannedOrder::sHandleItemsite(int pWarehousid)
   plannedHandleItemsite.exec();
   if (!plannedHandleItemsite.first())
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Site Information"),
-                         plannedHandleItemsite, __FILE__, __LINE__);
+    systemError(this, plannedHandleItemsite.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -469,8 +466,7 @@ void plannedOrder::populateFoNumber()
   else
   {
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Planned Order Number"),
-                         plannedpopulateFoNumber, __FILE__, __LINE__);
+    systemError(this, plannedpopulateFoNumber.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
     _number->setText("Error");

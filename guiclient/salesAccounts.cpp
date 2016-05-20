@@ -20,7 +20,6 @@
 
 #include "salesAccount.h"
 #include "guiclient.h"
-#include "errorReporter.h"
 
 salesAccounts::salesAccounts(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -129,9 +128,9 @@ void salesAccounts::sDelete()
              "WHERE (salesaccnt_id=:salesaccnt_id);" );
   salesDelete.bindValue(":salesaccnt_id", _salesaccnt->id());
   salesDelete.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Sales Account"),
-                                salesDelete, __FILE__, __LINE__))
+  if (salesDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, salesDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -148,9 +147,9 @@ void salesAccounts::sFillList()
 
   XSqlQuery fillq = mql.toQuery(params);
   _salesaccnt->populate(fillq);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sales Account Information"),
-                                fillq, __FILE__, __LINE__))
+  if (fillq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, fillq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

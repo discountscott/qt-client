@@ -225,7 +225,6 @@ to be bound by its terms.</comment>
    <class>DLineEdit</class>
    <extends>QWidget</extends>
    <header>datecluster.h</header>
-   <container>1</container>
   </customwidget>
   <customwidget>
    <class>OrderCluster</class>
@@ -236,7 +235,6 @@ to be bound by its terms.</comment>
    <class>XTreeWidget</class>
    <extends>QTreeWidget</extends>
    <header>xtreewidget.h</header>
-   <container>1</container>
   </customwidget>
  </customwidgets>
  <tabstops>

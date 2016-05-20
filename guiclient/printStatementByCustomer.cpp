@@ -71,7 +71,6 @@ void printStatementByCustomer::clear()
 
 ParameterList printStatementByCustomer::getParams(XSqlQuery *docq)
 {
-  Q_UNUSED(docq);
   return getParams();
 }
 

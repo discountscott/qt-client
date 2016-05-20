@@ -21,7 +21,6 @@
 
 #include "exporthelper.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 #define DEBUG true
 
@@ -104,16 +103,14 @@ void exportData::sDeleteQuerySet()
       int result = delq.value("result").toInt();
       if (result < 0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Query Set"),
-                               storedProcErrorLookup("deleteQryhead", result),
-                               __FILE__, __LINE__);
+        systemError(this, storedProcErrorLookup("deleteQryhead", result),
+                    __FILE__, __LINE__);
         return;
       }
     }
     if (delq.lastError().type() != QSqlError::NoError)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Query Set"),
-                           delq, __FILE__, __LINE__);
+      systemError(this, delq.lastError().text(), __FILE__, __LINE__);
       return;
     }
 
@@ -222,9 +219,9 @@ void exportData::sHandleButtons()
         else if (qryitem_src == "CUSTOM")
           paramlist.append(MQLEdit::getParamsFromMetaSQLText(qiq.value("qryitem_detail").toString()));
       }
-      if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Query Information"),
-                                    qiq, __FILE__, __LINE__))
+      if (qiq.lastError().type() != QSqlError::NoError)
       {
+        systemError(this, qiq.lastError().text(), __FILE__, __LINE__);
         return;
       }
       paramlist.sort();

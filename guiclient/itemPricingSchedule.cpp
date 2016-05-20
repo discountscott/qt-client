@@ -17,7 +17,6 @@
 
 #include <metasql.h>
 #include "mqlutil.h"
-#include "errorReporter.h"
 
 itemPricingSchedule::itemPricingSchedule(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -121,16 +120,17 @@ enum SetResponse itemPricingSchedule::set(const ParameterList &pParams)
     connect(_ipsitem, SIGNAL(itemSelected(int)), _edit, SLOT(animateClick()));
   }
 
-  if (_mode == cNew)
+  if ( (_mode == cNew) )
   {
     itemet.exec("SELECT NEXTVAL('ipshead_ipshead_id_seq') AS ipshead_id;");
     if (itemet.first())
       _ipsheadid = itemet.value("ipshead_id").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Pricing Information"),
-                                  itemet, __FILE__, __LINE__))
+    else if (itemet.lastError().type() != QSqlError::NoError)
     {
-      reject();
-      return UndefinedError;
+	systemError(this, _rejectedMsg.arg(itemet.lastError().databaseText()),
+                  __FILE__, __LINE__);
+        reject();
+        return UndefinedError;
     }
   }
 
@@ -210,10 +210,11 @@ bool itemPricingSchedule::sSave(bool p)
   itemSave.bindValue(":ipshead_expires", _dates->endDate());
   itemSave.bindValue(":ipshead_curr_id", _currency->id());
   itemSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Item Pricing Information"),
-                                itemSave, __FILE__, __LINE__))
+  if (itemSave.lastError().type() != QSqlError::NoError)
   {
-    reject();
+	systemError(this, _rejectedMsg.arg(itemSave.lastError().databaseText()),
+                  __FILE__, __LINE__);
+        reject();
   }
 
   _mode = cEdit;
@@ -300,10 +301,11 @@ void itemPricingSchedule::sDelete()
     return;
   itemDelete.bindValue(":ipsitem_id", _ipsitem->id());
   itemDelete.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Item Pricing Information"),
-                                itemDelete, __FILE__, __LINE__))
+  if (itemDelete.lastError().type() != QSqlError::NoError)
   {
-    reject();
+	systemError(this, _rejectedMsg.arg(itemDelete.lastError().databaseText()),
+                  __FILE__, __LINE__);
+        reject();
   }
 
   sFillList();
@@ -323,9 +325,10 @@ void itemPricingSchedule::sCheckCurrency()
     QMessageBox::critical( this, tr("Currency Exchange Rate"),
                           tr("Currency Exchange Rate not found.  You should correct before proceeding.") );
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Currency Information"),
-                                currCheck, __FILE__, __LINE__))
+  else if (currCheck.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, _rejectedMsg.arg(currCheck.lastError().databaseText()),
+                __FILE__, __LINE__);
     reject();
   }
 }
@@ -393,10 +396,11 @@ void itemPricingSchedule::populate()
 
     sFillList(-1);
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Pricing Schedule Information"),
-                                pop, __FILE__, __LINE__))
+  else if (itempopulate.lastError().type() != QSqlError::NoError)
   {
-    reject();
+	systemError(this, _rejectedMsg.arg(itempopulate.lastError().databaseText()),
+                  __FILE__, __LINE__);
+		  reject();
   }
 }
 

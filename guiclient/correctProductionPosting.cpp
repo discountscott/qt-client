@@ -18,7 +18,6 @@
 #include "distributeInventory.h"
 #include "inputManager.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 correctProductionPosting::correctProductionPosting(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -98,35 +97,23 @@ bool correctProductionPosting::okToPost()
   }
 
   XSqlQuery itemtypeq;
-  itemtypeq.prepare( "SELECT itemsite_costmethod, itemsite_qtyonhand "
+  itemtypeq.prepare( "SELECT itemsite_costmethod "
              "FROM wo, itemsite "
              "WHERE ( (wo_itemsite_id=itemsite_id)"
              " AND (wo_id=:wo_id) );" );
   itemtypeq.bindValue(":wo_id", _wo->id());
   itemtypeq.exec();
-  if (itemtypeq.first())
+  if (itemtypeq.first() && (itemtypeq.value("itemsite_costmethod").toString() == "J"))
   {
-    if (itemtypeq.value("itemsite_costmethod").toString() == "J")
-    {
-      QMessageBox::warning(this, tr("Cannot Post Correction"),
-                           tr("You may not post a correction to a Work Order for a "
-                              "Item Site with the Job cost method. You must, "
-                              "instead, adjust shipped quantities."));
-      return false;
-    }
-
-    if (itemtypeq.value("itemsite_qtyonhand").toDouble() < _qty->toDouble())
-    {
-      QMessageBox::warning(this, tr("Cannot Post Correction"),
-                           tr("You may not post a correction to a Work Order for a "
-                              "Item Site with a quantity on hand less than the "
-                              "correction quantity."));
-      return false;
-    }
+    QMessageBox::warning(this, tr("Cannot Post Correction"),
+                         tr("You may not post a correction to a Work Order for a "
+                            "Item Site with the Job cost method. You must, "
+                            "instead, adjust shipped quantities."));
+    return false;
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Production Correction"),
-                                itemtypeq, __FILE__, __LINE__))
+  else if (itemtypeq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, itemtypeq.lastError().databaseText(), __FILE__, __LINE__);
     return false;
   }
 
@@ -167,9 +154,8 @@ void correctProductionPosting::sCorrect()
     if (result < 0)
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Production Correction"),
-                           storedProcErrorLookup("correctProduction", result),
-                           __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("correctProduction", result),
+                  __FILE__, __LINE__);
       return;
     }
 
@@ -186,8 +172,7 @@ void correctProductionPosting::sCorrect()
   else if (correctCorrect.lastError().type() != QSqlError::NoError)
   {
     rollback.exec();
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Production Correction"),
-                                    correctCorrect, __FILE__, __LINE__);
+    systemError(this, correctCorrect.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 

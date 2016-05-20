@@ -18,7 +18,6 @@
 #include "configureIE.h"
 #include "importhelper.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 #define DEBUG false
 
@@ -36,9 +35,9 @@ void importData::setVisible(bool visible)
 
   else if (! userHasPriv())
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Privileges Violation"),
-                         tr("%1: You have insufficient privileges to "
-                            "view this window").arg(windowTitle()),__FILE__,__LINE__);
+    systemError(this,
+                tr("You do not have sufficient privilege to view this window"),
+                __FILE__, __LINE__);
     close();
   }
   else if (_metrics->value("XMLSuccessTreatment").isEmpty() ||
@@ -48,9 +47,9 @@ void importData::setVisible(bool visible)
                      "Have an administrator configure Data Import before "
                      "trying to import data.");
     if (configureIE::userHasPriv())
-    ErrorReporter::error(QtCriticalMsg, this, tr("Incomplete Setup"),
-                         tr("%1: You must first set up the application to "
-                            "import data").arg(windowTitle()),__FILE__,__LINE__);
+      tr("<p>You must first set up the application to import data.");
+
+    systemError(this, msg, __FILE__, __LINE__);
     deleteLater();
   }
   else
@@ -172,11 +171,11 @@ void importData::sDelete()
 
 void importData::sPopulateMenu(QMenu* pMenu, QTreeWidgetItem* /* pItem */)
 {
-  //QAction *menuItem;
+  QAction *menuItem;
 
-  (void)pMenu->addAction(tr("Import Selected"),  this, SLOT(sImportSelected()));
-  (void)pMenu->addAction(tr("Clear Status"),     this, SLOT(sClearStatus()));
-  (void)pMenu->addAction(tr("Delete From List"), this, SLOT(sDelete()));
+  menuItem = pMenu->addAction(tr("Import Selected"),  this, SLOT(sImportSelected()));
+  menuItem = pMenu->addAction(tr("Clear Status"),     this, SLOT(sClearStatus()));
+  menuItem = pMenu->addAction(tr("Delete From List"), this, SLOT(sDelete()));
 }
 
 void importData::sImportAll()
@@ -266,8 +265,7 @@ bool importData::importOne(const QString &pFileName, int pType)
   {
     if (! ImportHelper::importXML(pFileName, errmsg, warnmsg))
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("XML Import Error"),
-                           tr("%1: %2 ").arg(windowTitle(),errmsg),__FILE__,__LINE__);
+      systemError(this, errmsg);
       return false;
     }
     else if (! warnmsg.isEmpty())
@@ -282,8 +280,7 @@ bool importData::importOne(const QString &pFileName, int pType)
   {
     if (! ImportHelper::importCSV(pFileName, errmsg))
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("CSV Import Error"),
-                           tr("%1: %2 ").arg(windowTitle(),errmsg),__FILE__,__LINE__);
+      systemError(this, errmsg);
       return false;
     }
   }

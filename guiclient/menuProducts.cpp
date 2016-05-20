@@ -117,6 +117,10 @@ menuProducts::menuProducts(GUIClient *Pparent) :
 
   actionProperties acts[] = {
 
+#ifdef Q_OS_MAC
+  { "sys.preferences", tr("P&references..."), SLOT(sPreferences()), mainMenu, "MaintainPreferencesSelf MaintainPreferencesOthers", NULL, NULL, true, NULL},
+#endif
+
   // Product | Reports
   { "menu",	tr("&Reports"), (char*)reportsMenu,	mainMenu, "true", NULL, NULL, true , NULL },
   
@@ -236,7 +240,11 @@ void menuProducts::addActionsToMenu(actionProperties acts[], unsigned int numEle
   QAction * m = 0;
   for (unsigned int i = 0; i < numElems; i++)
   {
-    if (acts[i].actionName == QString("menu"))
+    if (! acts[i].visible)
+    {
+      continue;
+    }
+    else if (acts[i].actionName == QString("menu"))
     {
       m = acts[i].menu->addMenu((QMenu*)(acts[i].slot));
       if(m)
@@ -248,7 +256,7 @@ void menuProducts::addActionsToMenu(actionProperties acts[], unsigned int numEle
     }
     else if ((acts[i].toolBar != NULL) && (!acts[i].toolTip.isEmpty()))
     {
-      m = new Action( parent,
+      new Action( parent,
                   acts[i].actionName,
                   acts[i].actionTitle,
                   this,
@@ -261,7 +269,7 @@ void menuProducts::addActionsToMenu(actionProperties acts[], unsigned int numEle
     }
     else if (acts[i].toolBar != NULL)
     {
-      m = new Action( parent,
+      new Action( parent,
                   acts[i].actionName,
                   acts[i].actionTitle,
                   this,
@@ -274,7 +282,7 @@ void menuProducts::addActionsToMenu(actionProperties acts[], unsigned int numEle
     }
     else
     {
-      m = new Action( parent,
+      new Action( parent,
                   acts[i].actionName,
                   acts[i].actionTitle,
                   this,
@@ -282,7 +290,6 @@ void menuProducts::addActionsToMenu(actionProperties acts[], unsigned int numEle
                   acts[i].menu,
                   acts[i].priv ) ;
     }
-    if (m) m->setVisible(acts[i].visible);
   }
 }
 

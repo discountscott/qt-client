@@ -19,7 +19,6 @@
 
 #include "inputManager.h"
 #include "countTagList.h"
-#include "errorReporter.h"
 
 countTag::countTag(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -150,9 +149,9 @@ void countTag::sEnter()
     countEnter.bindValue(":qty", _qty->toDouble());
     countEnter.bindValue(":comments", _newComments->toPlainText());
     countEnter.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Count Tag Information"),
-                                  countEnter, __FILE__, __LINE__))
+    if (countEnter.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, countEnter.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -176,9 +175,9 @@ void countTag::sEnter()
 
       return;
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Count Tag Information"),
-                                  countEnter, __FILE__, __LINE__))
+    else if (countEnter.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, countEnter.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -235,9 +234,9 @@ void countTag::sEnter()
           break;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Count Tag Information"),
-                                  countEnter, __FILE__, __LINE__))
+    else if (countEnter.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, countEnter.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -283,9 +282,9 @@ void countTag::sParseCountTagNumber()
     _cnttagid = countParseCountTagNumber.value("invcnt_id").toInt();
     populate();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Count Tag Information"),
-                                countParseCountTagNumber, __FILE__, __LINE__))
+  else if (countParseCountTagNumber.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, countParseCountTagNumber.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   else
@@ -325,9 +324,9 @@ void countTag::populate()
     _currentComments->setText(countpopulate.value("invcnt_comments").toString());
     _location->setText(countpopulate.value("f_location").toString());
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Count Tag Information"),
-                                countpopulate, __FILE__, __LINE__))
+  else if (countpopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, countpopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   else

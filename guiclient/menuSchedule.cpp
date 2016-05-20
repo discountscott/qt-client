@@ -111,7 +111,11 @@ void menuSchedule::addActionsToMenu(actionProperties acts[], unsigned int numEle
   QAction * m = 0;
   for (unsigned int i = 0; i < numElems; i++)
   {
-    if (acts[i].actionName == QString("menu"))
+    if (! acts[i].visible)
+    {
+      continue;
+    }
+    else if (acts[i].actionName == QString("menu"))
     {
       m = acts[i].menu->addMenu((QMenu*)(acts[i].slot));
       if(m)
@@ -119,11 +123,11 @@ void menuSchedule::addActionsToMenu(actionProperties acts[], unsigned int numEle
     }
     else if (acts[i].actionName == QString("separator"))
     {
-      m = acts[i].menu->addSeparator();
+      acts[i].menu->addSeparator();
     }
     else if ((acts[i].toolBar != NULL) && (!acts[i].toolTip.isEmpty()))
     {
-      m = new Action( parent,
+      new Action( parent,
                   acts[i].actionName,
                   acts[i].actionTitle,
                   this,
@@ -136,7 +140,7 @@ void menuSchedule::addActionsToMenu(actionProperties acts[], unsigned int numEle
     }
     else if (acts[i].toolBar != NULL)
     {
-      m = new Action( parent,
+      new Action( parent,
                   acts[i].actionName,
                   acts[i].actionTitle,
                   this,
@@ -149,7 +153,7 @@ void menuSchedule::addActionsToMenu(actionProperties acts[], unsigned int numEle
     }
     else
     {
-      m = new Action( parent,
+      new Action( parent,
                   acts[i].actionName,
                   acts[i].actionTitle,
                   this,
@@ -157,7 +161,6 @@ void menuSchedule::addActionsToMenu(actionProperties acts[], unsigned int numEle
                   acts[i].menu,
                   acts[i].priv ) ;
     }
-    if (m) m->setVisible(acts[i].visible);
   }
 }
 

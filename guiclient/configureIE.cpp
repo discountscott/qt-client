@@ -18,7 +18,6 @@
 #include "storedProcErrorLookup.h"
 #include "atlasMap.h"
 #include "xsltMap.h"
-#include "errorReporter.h"
 
 bool configureIE::userHasPriv()
 {
@@ -202,18 +201,18 @@ void configureIE::sFillList()
   XSqlQuery xsltq("SELECT * FROM xsltmap ORDER BY xsltmap_name;");
   xsltq.exec();
   _map->populate(xsltq);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Import/Export Setting Information"),
-                                xsltq, __FILE__, __LINE__))
+  if (xsltq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, xsltq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
   XSqlQuery atlasq("SELECT * FROM atlasmap ORDER BY atlasmap_name;");
   atlasq.exec();
   _atlasMap->populate(atlasq);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Import/Export Setting Information"),
-                                atlasq, __FILE__, __LINE__))
+  if (atlasq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, atlasq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -229,9 +228,9 @@ void configureIE::sDeleteAtlasMap()
     delq.prepare("DELETE FROM atlasmap WHERE (atlasmap_id=:mapid);");
     delq.bindValue(":mapid", _atlasMap->id());
     delq.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Map"),
-                                  delq, __FILE__, __LINE__))
+    if (delq.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, delq.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -250,9 +249,9 @@ void configureIE::sDeleteMap()
     delq.prepare("DELETE FROM xsltmap WHERE (xsltmap_id=:mapid);");
     delq.bindValue(":mapid", _map->id());
     delq.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Map"),
-                                  delq, __FILE__, __LINE__))
+    if (delq.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, delq.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 

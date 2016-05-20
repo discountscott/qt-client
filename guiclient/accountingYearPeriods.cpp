@@ -141,16 +141,14 @@ void accountingYearPeriods::sDelete()
     int result = deleteAccountingYear.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Accounting Year Period"),
-                             storedProcErrorLookup("deleteAccountingYearPeriod", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("deleteAccountingYearPeriod", result), __FILE__, __LINE__);
       return;
     }
     sFillList();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Accounting Year Period"),
-                                deleteAccountingYear, __FILE__, __LINE__))
+  else if (deleteAccountingYear.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, deleteAccountingYear.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -166,16 +164,14 @@ void accountingYearPeriods::sClosePeriod()
     int result = closeAccountingYear.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Closing Requested Period"),
-                             storedProcErrorLookup("closeAccountingYearPeriod", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("closeAccountingYearPeriod", result), __FILE__, __LINE__);
       return;
     }
     sFillList();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Closing Requested Period"),
-                                closeAccountingYear, __FILE__, __LINE__))
+  else if (closeAccountingYear.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, closeAccountingYear.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -191,16 +187,16 @@ void accountingYearPeriods::sOpenPeriod()
     int result = openAccountingYear.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Opening Requested Period"),
-                             storedProcErrorLookup("openAccountingYearPeriod", result),
-                             __FILE__, __LINE__);
+      systemError(this,
+                  storedProcErrorLookup("openAccountingYearPeriod", result),
+                  __FILE__, __LINE__);
       return;
     }
     sFillList();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Opening Requested Period"),
-                                openAccountingYear, __FILE__, __LINE__))
+  else if (openAccountingYear.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, openAccountingYear.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

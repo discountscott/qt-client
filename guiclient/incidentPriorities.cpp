@@ -19,7 +19,6 @@
 #include <openreports.h>
 
 #include "incidentPriority.h"
-#include "errorReporter.h"
 
 incidentPriorities::incidentPriorities(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -72,9 +71,9 @@ void incidentPriorities::sFillList()
              "FROM incdtpriority "
              "ORDER BY incdtpriority_order, incdtpriority_name;" );
   incidentFillList.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Incident Priority Information"),
-                                incidentFillList, __FILE__, __LINE__))
+  if (incidentFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, incidentFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   _incidentPriorities->populate(incidentFillList);
@@ -87,9 +86,9 @@ void incidentPriorities::sDelete()
              "WHERE (incdtpriority_id=:incdtpriorityid);" );
   incidentDelete.bindValue(":incdtpriorityid", _incidentPriorities->id());
   incidentDelete.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Incident Priority"),
-                                incidentDelete, __FILE__, __LINE__))
+  if (incidentDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, incidentDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 

@@ -13,7 +13,6 @@
 #include <QMessageBox>
 #include <QSqlError>
 #include <QVariant>
-#include "errorReporter.h"
 
 customerType::customerType(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -68,8 +67,9 @@ enum SetResponse customerType::set(const ParameterList &pParams)
       }
       else
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Customer Type Information"),
-                             customeret, __FILE__, __LINE__);
+        systemError(this, tr("A System Error occurred at %1::%2.")
+                          .arg(__FILE__)
+                          .arg(__LINE__) );
       }
     }
     else if (param.toString() == "edit")
@@ -160,9 +160,9 @@ void customerType::sSave()
   customerSave.bindValue(":custtype_descrip", _description->text().trimmed());
   customerSave.bindValue(":custtype_char",  QVariant(_characteristicGroup->isChecked()));
   customerSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Customer Type"),
-                                customerSave, __FILE__, __LINE__))
+  if (customerSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, customerSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -184,9 +184,9 @@ void customerType::populate()
     _characteristicGroup->setChecked(customerpopulate.value("custtype_char").toBool());
     _charass->setId(_custtypeid);
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Customer Type Information"),
-                                customerpopulate, __FILE__, __LINE__))
+  else if (customerpopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, customerpopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

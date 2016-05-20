@@ -19,7 +19,6 @@
 
 #include "classCode.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 classCodes::classCodes(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -112,15 +111,14 @@ void classCodes::sDelete()
     int result = classDelete.value("result").toInt();
     if (result < 0)
     {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Class Code"),
-                             storedProcErrorLookup("deleteClassCode", result),
-                             __FILE__, __LINE__);
-        return;
+      systemError(this, storedProcErrorLookup("deleteClassCode", result),
+                  __FILE__, __LINE__);
+      return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Class Code"),
-                                classDelete, __FILE__, __LINE__))
+  else if (classDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, classDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   sFillList(-1);
@@ -150,15 +148,15 @@ void classCodes::sDeleteUnused()
       int result = classDeleteUnused.value("result").toInt();
       if (result < 0)
       {
-          ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Unused Class Codes"),
-                               storedProcErrorLookup("deleteUnusedClassCodes", result),
-                               __FILE__, __LINE__);
-          return;
+        systemError(this,
+                    storedProcErrorLookup("deleteUnusedClassCodes", result),
+                    __FILE__, __LINE__);
+        return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Unused Class Codes"),
-                                  classDeleteUnused, __FILE__, __LINE__))
+    else if (classDeleteUnused.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, classDeleteUnused.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
     sFillList(-1);

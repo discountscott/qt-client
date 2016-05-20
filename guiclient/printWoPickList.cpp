@@ -14,7 +14,6 @@
 #include <QVariant>
 
 #include <openreports.h>
-#include "errorReporter.h"
 
 printWoPickList::printWoPickList(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -77,9 +76,7 @@ void printWoPickList::sPrint()
   if (orReport::beginMultiPrint(&printer, userCanceled) == false)
   {
     if(!userCanceled)
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                         tr("%1: Could not initialize printing system "
-                            "for multiple reports. ").arg(windowTitle()),__FILE__,__LINE__);
+      systemError(this, tr("Could not initialize printing system for multiple reports."));
     return;
   }
   if (report.isValid())

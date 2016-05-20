@@ -16,8 +16,6 @@
 #include <QVariant>
 
 #include "glcluster.h"
-#include <openreports.h>
-#include "errorReporter.h"
 
 glTransaction::glTransaction(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -155,19 +153,6 @@ void glTransaction::sPost()
   glPost.exec();
   if (glPost.first())
   {
-//  Print on Post
-    if (_print->isChecked())
-    {
-      ParameterList params;
-      params.append("sequence", glPost.value("result").toInt());
-
-      orReport report("GLSimple", params);
-      if (report.isValid())
-        report.print();
-      else
-        report.reportError(this);
-    }
-
     if (_captive)
       done(glPost.value("result").toInt());
     else
@@ -181,12 +166,11 @@ void glTransaction::sPost()
       _amount->setFocus();
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting G/L Transaction"),
-                                glPost, __FILE__, __LINE__))
+  else if (glPost.lastError().type() != QSqlError::NoError)
   {
-     return;
+    systemError(this, glPost.lastError().databaseText(), __FILE__, __LINE__);
+    return;
   }
-
 }
 
 void glTransaction::clear()

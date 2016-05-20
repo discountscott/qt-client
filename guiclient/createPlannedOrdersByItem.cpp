@@ -13,7 +13,6 @@
 #include <QVariant>
 #include <QMessageBox>
 #include <QSqlError>
-#include "errorReporter.h"
 
 createPlannedOrdersByItem::createPlannedOrdersByItem(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
   : XDialog(parent, name, modal, fl)
@@ -87,9 +86,9 @@ void createPlannedOrdersByItem::sCreate()
     createCreate.bindValue(":item_id", _item->id());
     createCreate.bindValue(":warehous_id", _warehouse->id());
     createCreate.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Creating Planned Orders By Item"),
-                                  createCreate, __FILE__, __LINE__))
+    if (createCreate.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, createCreate.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -105,9 +104,9 @@ void createPlannedOrdersByItem::sCreate()
     createCreate.bindValue(":item_id", _item->id());
     createCreate.bindValue(":warehous_id", _warehouse->id());
     createCreate.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Creating Planned Orders By Item"),
-                                  createCreate, __FILE__, __LINE__))
+    if (createCreate.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, createCreate.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }   

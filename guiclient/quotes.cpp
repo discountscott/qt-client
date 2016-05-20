@@ -16,7 +16,6 @@
 #include <QSqlError>
 #include <QVariant>
 
-#include <applock.h>
 #include <parameter.h>
 #include <openreports.h>
 
@@ -41,7 +40,6 @@ quotes::quotes(QWidget* parent, const char *name, Qt::WindowFlags fl)
   setParameterWidgetVisible(true);
   setNewVisible(true);
   setQueryOnStartEnabled(true);
-  setAutoUpdateEnabled(true);
 
   _convertedtoSo->setVisible(false);
 
@@ -67,7 +65,6 @@ quotes::quotes(QWidget* parent, const char *name, Qt::WindowFlags fl)
   list()->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
   setupCharacteristics("QU");
-  parameterWidget()->applyDefaultFilterSet();
 
   if (_privileges->check("MaintainQuotes"))
     connect(list(), SIGNAL(itemSelected(int)), this, SLOT(sEdit()));
@@ -77,7 +74,7 @@ quotes::quotes(QWidget* parent, const char *name, Qt::WindowFlags fl)
     connect(list(), SIGNAL(itemSelected(int)), this, SLOT(sView()));
   }
 
-  connect(omfgThis, SIGNAL(quotesUpdated(int, bool)), this, SLOT(sHandleQuoteEvent(int, bool)));
+  connect(omfgThis, SIGNAL(quotesUpdated(int, bool)), this, SLOT(sFillList()));
 }
 
 enum SetResponse quotes::set(const ParameterList& pParams)
@@ -91,12 +88,6 @@ enum SetResponse quotes::set(const ParameterList& pParams)
     sFillList();
 
   return NoError;
-}
-
-void quotes::sHandleQuoteEvent(int pQuheadid, bool)
-{
-  if (pQuheadid == -1)
-    sFillList();
 }
 
 void quotes::sPopulateMenu(QMenu * pMenu, QTreeWidgetItem *, int)
@@ -156,7 +147,6 @@ void quotes::sPrint()
 
 void quotes::sConvert(int pType)
 {
-  AppLock _lock;
   QString docType = "Sales Order";
   if (pType == 1)
     docType = "Invoice";
@@ -187,21 +177,6 @@ void quotes::sConvert(int pType)
 
       foreach (XTreeWidgetItem *item, list()->selectedItems())
       {
-        if (!_lock.acquire("quhead", item->id(), AppLock::Interactive))
-        {
-          QMessageBox::critical(this, tr("Cannot Convert"),
-                                tr("<p>One or more of the selected Quotes is"
-                                   " being edited.  You cannot convert a Quote"
-                                   " that is being edited."));
-          return;
-        }
-        if (! _lock.release())
-        {
-          ErrorReporter::error(QtCriticalMsg, this, tr("Locking Error"),
-                               _lock.lastError(), __FILE__, __LINE__);
-          return;
-        }
-        
         if (checkSitePrivs(item->id()))
         {
           int quheadid = item->id();
@@ -211,7 +186,7 @@ void quotes::sConvert(int pType)
           check.exec();
           if (check.first())
           {
-            QMessageBox::critical(this, tr("Cannot Convert"),
+            QMessageBox::critical(this, tr("Can not Convert"),
                                 tr("<p>One or more of the selected Quotes have"
                                    " been converted.  You cannot convert an already"
                                    " converted Quote."));
@@ -248,11 +223,11 @@ void quotes::sConvert(int pType)
                       int result = prospectq.value("result").toInt();
                       if (result < 0)
                       {
-                          ErrorReporter::error(QtCriticalMsg, this, tr("Error Converting Prospect To Customer"),
-                                               storedProcErrorLookup("convertProspectToCustomer", result),
-                                               __FILE__, __LINE__);
-                          notConverted.append(item);
-                          continue;
+                        systemError(this,
+                                    storedProcErrorLookup("convertProspectToCustomer",
+                                    result), __FILE__, __LINE__);
+                        notConverted.append(item);
+                        continue;
                       }
                       convert.exec();
                       if (convert.first())
@@ -268,11 +243,12 @@ void quotes::sConvert(int pType)
                         }
                       }
                     }
-                    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Converting Prospect To Customer"),
-                                                  prospectq, __FILE__, __LINE__))
+                    else if (prospectq.lastError().type() != QSqlError::NoError)
                     {
-                        notConverted.append(item);
-                        continue;
+                      systemError(this, prospectq.lastError().databaseText(),
+                              __FILE__, __LINE__);
+                      notConverted.append(item);
+                      continue;
                     }
                   }
                   else
@@ -345,13 +321,11 @@ void quotes::sConvert(int pType)
 void quotes::sConvertSalesOrder()
 {
   sConvert(0);
-  sFillList();
 }
 
 void quotes::sConvertInvoice()
 {
   sConvert(1);
-  sFillList();
 }
 
 void quotes::sCopy()
@@ -369,15 +343,15 @@ void quotes::sCopy()
       {
         lastid = qq.value("result").toInt();
       }
-      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Copying Quote"),
-                                    qq, __FILE__, __LINE__))
+      else if(qq.lastError().type() != QSqlError::NoError)
       {
+        systemError(this, qq.lastError().text(), __FILE__, __LINE__);
         return;
       }
     }
   }
   if(lastid != -1)
-    omfgThis->sQuotesUpdated(-1);
+    omfgThis->sQuotesUpdated(lastid);
 }
 
 void quotes::sCopyToCustomer()
@@ -397,7 +371,7 @@ void quotes::sCopyToCustomer()
       }
     }
     if(lastid != -1)
-      omfgThis->sQuotesUpdated(-1);
+      omfgThis->sQuotesUpdated(lastid);
 }
 
 void quotes::sNew()
@@ -471,18 +445,18 @@ void quotes::sDelete()
           int result = quotesDelete.value("result").toInt();
           if (result < 0)
           {
-              ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Quote"),
-                                   storedProcErrorLookup("deleteQuote", result),
-                                   __FILE__, __LINE__);
-              continue;
+            systemError(this, storedProcErrorLookup("deleteQuote", result),
+                        __FILE__, __LINE__);
+            continue;
           }
           counter++;
         }
-        else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Quote #%1")
-                                      .arg(item->text(0)),
-                                      quotesDelete, __FILE__, __LINE__))
+        else if (quotesDelete.lastError().type() != QSqlError::NoError)
         {
-            continue;
+          systemError(this, tr("A System Error occurred deleting Quote #%1\n%2.")
+                             .arg(item->text(0))
+                             .arg(quotesDelete.lastError().databaseText()), __FILE__, __LINE__);
+          continue;
         }
       }
     }

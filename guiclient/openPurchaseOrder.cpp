@@ -17,7 +17,6 @@
 #include <QPushButton>
 
 #include <parameter.h>
-#include <errorReporter.h>
 
 //#include "purchaseOrder.h"
 openPurchaseOrder::openPurchaseOrder(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
@@ -98,9 +97,9 @@ void openPurchaseOrder::sFillList()
   openFillList.bindValue(":dropship", dropship);
   openFillList.exec();
   _po->populate(openFillList,true);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Purchase Order Information"),
-                                openFillList, __FILE__, __LINE__))
+  if (openFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, openFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

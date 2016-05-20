@@ -19,7 +19,6 @@
 
 #include "company.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 companies::companies(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -105,15 +104,14 @@ void companies::sDelete()
     int result = companiesDelete.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Company"),
-                             storedProcErrorLookup("deleteCompany", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("deleteCompany", result),
+                  __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Company"),
-                                companiesDelete, __FILE__, __LINE__))
+  else if (companiesDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, companiesDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -141,9 +139,9 @@ void companies::sFillList()
              "ORDER BY company_number;" );
   companiesFillList.exec();
   _company->populate(companiesFillList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Company Information"),
-                                companiesFillList, __FILE__, __LINE__))
+  if (companiesFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, companiesFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

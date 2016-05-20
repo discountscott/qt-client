@@ -15,12 +15,9 @@
 #include <QMessageBox>
 #include <QSqlError>
 #include <QVariant>
+
 #include <QDebug>
 
-#include <metasql.h>
-
-#include "mqlutil.h"
-#include "errorReporter.h"
 #include "distributeInventory.h"
 #include "invoiceItem.h"
 #include "storedProcErrorLookup.h"
@@ -160,14 +157,14 @@ enum SetResponse invoice::set(const ParameterList &pParams)
         _documents->setId(_invcheadid);
         _charass->setId(_invcheadid);
       }
-      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Invoice Information"),
-                                    invoiceet, __FILE__, __LINE__))
+      else if (invoiceet.lastError().type() != QSqlError::NoError)
       {
-        return UndefinedError;
+	    systemError(this, invoiceet.lastError().databaseText(), __FILE__, __LINE__);
+	    return UndefinedError;
       }
 
       if ((_metrics->value("InvcNumberGeneration") == "A") ||
-         (_metrics->value("InvcNumberGeneration") == "O"))
+          (_metrics->value("InvcNumberGeneration") == "O"))
       {
         invoiceet.exec("SELECT fetchInvcNumber() AS number;");
         if (invoiceet.first())
@@ -177,9 +174,9 @@ enum SetResponse invoice::set(const ParameterList &pParams)
           if (_metrics->value("InvcNumberGeneration") == "A")
             _invoiceNumber->setEnabled(false);
         }
-        else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Invoice Information"),
-                                      invoiceet, __FILE__, __LINE__))
+        else if (invoiceet.lastError().type() != QSqlError::NoError)
         {
+          systemError(this, invoiceet.lastError().databaseText(), __FILE__, __LINE__);
           return UndefinedError;
         }
       }
@@ -208,10 +205,10 @@ enum SetResponse invoice::set(const ParameterList &pParams)
       invoiceet.bindValue(":invchead_orderdate", _orderDate->date());
       invoiceet.bindValue(":invchead_invcdate",	 _invoiceDate->date());
       invoiceet.exec();
-      if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Invoice Information"),
-                                    invoiceet, __FILE__, __LINE__))
+      if (invoiceet.lastError().type() != QSqlError::NoError)
       {
-        return UndefinedError;
+	    systemError(this, invoiceet.lastError().databaseText(), __FILE__, __LINE__);
+	    return UndefinedError;
       }
 
       connect(_cust,	    SIGNAL(valid(bool)), _new, SLOT(setEnabled(bool)));
@@ -331,8 +328,7 @@ void invoice::sClose()
       invoiceClose.bindValue(":invchead_id", _invcheadid);
       invoiceClose.exec();
       if (invoiceClose.lastError().type() != QSqlError::NoError)
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Invoice"),
-                           invoiceClose, __FILE__, __LINE__);
+        systemError(this, invoiceClose.lastError().databaseText(), __FILE__, __LINE__);
       if (invoiceClose.first() && invoiceClose.value("invchead_posted").toBool())
       {
         QMessageBox::warning( this, tr("Cannot delete Invoice"),
@@ -348,14 +344,14 @@ void invoice::sClose()
         int result = invoiceClose.value("result").toInt();
         if (result < 0)
         {
-          ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Invoice"),
-                                 storedProcErrorLookup("deleteInvoice", result),
-                                 __FILE__, __LINE__);
+          systemError(this, storedProcErrorLookup("deleteInvoice", result),
+                      __FILE__, __LINE__);
         }
       }
       else if (invoiceClose.lastError().type() != QSqlError::NoError)
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Invoice"),
-                           invoiceClose, __FILE__, __LINE__);
+        systemError(this,
+                    tr("Error deleting Invoice %1\n").arg(_invcheadid) +
+                       invoiceClose.lastError().databaseText(), __FILE__, __LINE__);
     }
   }
   else if (_mode == cEdit)
@@ -380,14 +376,14 @@ void invoice::sClose()
           int result = invoiceClose.value("result").toInt();
           if (result < 0)
           {
-            ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Invoice"),
-                                   storedProcErrorLookup("deleteInvoice", result),
-                                   __FILE__, __LINE__);
+            systemError(this, storedProcErrorLookup("deleteInvoice", result),
+                        __FILE__, __LINE__);
           }
         }
         else if (invoiceClose.lastError().type() != QSqlError::NoError)
-          ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Invoice"),
-                             invoiceClose, __FILE__, __LINE__);
+          systemError(this,
+                      tr("Error deleting Invoice %1\n").arg(_invcheadid) +
+                         invoiceClose.lastError().databaseText(), __FILE__, __LINE__);
       }
     }
   }
@@ -446,10 +442,10 @@ void invoice::sPopulateCustomerInfo(int pCustid)
 	  _shipToPhone->clear();
 	}
       }
-      if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Customer Information"),
-                                    cust, __FILE__, __LINE__))
+      if (cust.lastError().type() != QSqlError::NoError)
       {
-        return;
+	systemError(this, cust.lastError().databaseText(), __FILE__, __LINE__);
+	return;
       }
   }
   else
@@ -503,9 +499,9 @@ void invoice::populateShipto(int pShiptoid)
       _shipChrgs->setId(shipto.value("shipto_shipchrg_id").toInt());
       _shippingZone->setId(shipto.value("shipto_shipzone_id").toInt());
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Customer Ship-To Information"),
-                                  shipto, __FILE__, __LINE__))
+    else if (shipto.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, shipto.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -717,8 +713,7 @@ bool invoice::save()
   if (invoiceave.lastError().type() != QSqlError::NoError)
   {
     rollbackq.exec();
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Invoice Information"),
-                         invoiceave, __FILE__, __LINE__);
+    systemError(this, invoiceave.lastError().databaseText(), __FILE__, __LINE__);
     return false;
   }
 
@@ -726,8 +721,7 @@ bool invoice::save()
   if (! _recurring->save(true, cp, &errmsg))
   {
     rollbackq.exec();
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                         errmsg.arg(windowTitle()),__FILE__,__LINE__);
+    systemError(this, errmsg, __FILE__, __LINE__);
     return false;
   }
 
@@ -746,15 +740,13 @@ void invoice::postInvoice()
     journal = unpostedPost.value("result").toInt();
     if (journal < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Invoice"),
-                             storedProcErrorLookup("fetchJournalNumber", journal),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("fetchJournalNumber", journal), __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Invoice"),
-                                unpostedPost, __FILE__, __LINE__))
+  else if (unpostedPost.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, unpostedPost.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -788,8 +780,7 @@ void invoice::postInvoice()
   }
   else if (sum.lastError().type() != QSqlError::NoError)
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Invoice"),
-                         sum, __FILE__, __LINE__);
+    systemError(this, sum.lastError().databaseText(), __FILE__, __LINE__);
   }
   else if (sum.value("subtotal").toDouble() != 0)
   {
@@ -797,16 +788,15 @@ void invoice::postInvoice()
      xrate.exec();
      if (xrate.lastError().type() != QSqlError::NoError)
      {
-       ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Invoice #%1\n")
-                            .arg(_invoiceNumber->text()),
-                            xrate, __FILE__, __LINE__);
+       systemError(this, tr("System Error posting Invoice #%1\n%2")
+	            .arg(_invoiceNumber->text())
+	            .arg(xrate.lastError().databaseText()),
+                __FILE__, __LINE__);
      }
      else if (!xrate.first() || xrate.value("curr_rate").isNull())
      {
-       ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                            tr("Window:%2\nCould not post Invoice #%1 due to a missing exchange rate.")
-                            .arg(_invoiceNumber->text())
-                            .arg(windowTitle()),__FILE__,__LINE__);
+       systemError(this, tr("Could not post Invoice #%1 because of a missing exchange rate.")
+				.arg(_invoiceNumber->text()));
      }
   }
 
@@ -820,9 +810,8 @@ void invoice::postInvoice()
      if (result < 0)
      {
        rollback.exec();
-       ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Invoice"),
-                                storedProcErrorLookup("postInvoice", result),
-                                __FILE__, __LINE__);
+       systemError(this, storedProcErrorLookup("postInvoice", result),
+	           __FILE__, __LINE__);
      }
      else if (distributeInventory::SeriesAdjust(result, this) == XDialog::Rejected)
      {
@@ -889,9 +878,9 @@ void invoice::sDelete()
              "WHERE (invcitem_id=:invcitem_id);" );
   invoiceDelete.bindValue(":invcitem_id", _invcitem->id());
   invoiceDelete.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Line Item From Invoice"),
-                                invoiceDelete, __FILE__, __LINE__))
+  if (invoiceDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, invoiceDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -1024,26 +1013,56 @@ void invoice::populate()
 
     sFillItemList();
   }
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Invoice Information"),
-                                invoicepopulate, __FILE__, __LINE__))
+  if (invoicepopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, invoicepopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
 
 void invoice::sFillItemList()
 {
-  MetaSQLQuery mql = mqlLoad("invoiceItems", "list");
-
-  ParameterList params;
-  params.append("invchead_id", _invcheadid);
-  params.append("curr_id", _custCurrency->id());
-  params.append("date", _orderDate->date());
-  XSqlQuery invoiceFillItemList = mql.toQuery(params);
-
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Invoice Items"),
-                             invoiceFillItemList, __FILE__, __LINE__))
-    return;
+  XSqlQuery invoiceFillItemList;
+  invoiceFillItemList.prepare( "SELECT invcitem_id, invcitem_linenumber,"
+             "       formatSoItemNumber(invcitem_coitem_id) AS soitemnumber, "
+             "       CASE WHEN (item_id IS NULL) THEN invcitem_number"
+             "            ELSE item_number"
+             "       END AS itemnumber,"
+             "       CASE WHEN (item_id IS NULL) THEN invcitem_descrip"
+             "            ELSE (item_descrip1 || ' ' || item_descrip2)"
+             "       END AS itemdescription,"
+             "       quom.uom_name AS qtyuom,"
+             "       invcitem_ordered, invcitem_billed,"
+             "       puom.uom_name AS priceuom,"
+             "       invcitem_price,"
+             "       round((invcitem_billed * invcitem_qty_invuomratio) * (invcitem_price / "
+	           "            (CASE WHEN(item_id IS NULL) THEN 1 "
+	           "			            ELSE invcitem_price_invuomratio END)), 2) AS extprice,"
+             "       COALESCE(coitem_unitcost, itemCost(itemsite_id), 0.0) AS unitcost,"
+             "       ROUND((invcitem_billed * invcitem_qty_invuomratio) *"
+             "             ((invcitem_price / COALESCE(invcitem_price_invuomratio,1.0)) - "
+             "              currtolocal(:curr_id, COALESCE(coitem_unitcost, itemCost(itemsite_id), 0.0), :date)),2) AS margin,"
+             "       CASE WHEN (invcitem_price = 0.0) THEN 100.0"
+             "            ELSE (((invcitem_price - currtolocal(:curr_id, COALESCE(coitem_unitcost, itemCost(itemsite_id), 0.0), :date)) / invcitem_price) * 100.0)"
+             "       END AS marginpercent,"
+             "       'qty' AS invcitem_ordered_xtnumericrole,"
+             "       'qty' AS invcitem_billed_xtnumericrole,"
+             "       'salesprice' AS invcitem_price_xtnumericrole,"
+             "       'curr' AS extprice_xtnumericrole,"
+             "       'cost' AS unitcost_xtnumericrole "
+             "FROM invcitem LEFT OUTER JOIN item on (invcitem_item_id=item_id) "
+             "  LEFT OUTER JOIN uom AS quom ON (invcitem_qty_uom_id=quom.uom_id)"
+             "  LEFT OUTER JOIN uom AS puom ON (invcitem_price_uom_id=puom.uom_id)"
+             "  LEFT OUTER JOIN coitem ON (coitem_id=invcitem_coitem_id)"
+             "  LEFT OUTER JOIN itemsite ON (itemsite_item_id=invcitem_item_id AND itemsite_warehous_id=invcitem_warehous_id)"
+             "WHERE (invcitem_invchead_id=:invchead_id) "
+             "ORDER BY invcitem_linenumber;" );
+  invoiceFillItemList.bindValue(":invchead_id", _invcheadid);
+  invoiceFillItemList.bindValue(":curr_id", _custCurrency->id());
+  invoiceFillItemList.bindValue(":date", _orderDate->date());
+  invoiceFillItemList.exec();
+  if (invoiceFillItemList.lastError().type() != QSqlError::NoError)
+      systemError(this, invoiceFillItemList.lastError().databaseText(), __FILE__, __LINE__);
 
   _invcitem->clear();
   _invcitem->populate(invoiceFillItemList);
@@ -1060,8 +1079,7 @@ void invoice::sFillItemList()
   if (invoiceFillItemList.first())
     _subtotal->setLocalValue(invoiceFillItemList.value("subtotal").toDouble());
   else if (invoiceFillItemList.lastError().type() != QSqlError::NoError)
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Invoice Information"),
-                       invoiceFillItemList, __FILE__, __LINE__);
+    systemError(this, invoiceFillItemList.lastError().databaseText(), __FILE__, __LINE__);
 
   _custCurrency->setEnabled(_invcitem->topLevelItemCount() == 0);
 
@@ -1089,8 +1107,7 @@ void invoice::closeEvent(QCloseEvent *pEvent)
     invoicecloseEvent.bindValue(":invchead_id", _invcheadid);
     invoicecloseEvent.exec();
     if (invoicecloseEvent.lastError().type() != QSqlError::NoError)
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Confirming Invoice Has Not Been Posted"),
-                         invoicecloseEvent, __FILE__, __LINE__);
+      systemError(this, invoicecloseEvent.lastError().databaseText(), __FILE__, __LINE__);
     if (invoicecloseEvent.first() && invoicecloseEvent.value("invchead_posted").toBool())
     {
       QMessageBox::warning( this, tr("Cannot delete Invoice"),
@@ -1103,8 +1120,7 @@ void invoice::closeEvent(QCloseEvent *pEvent)
     invoicecloseEvent.bindValue(":invoiceNumber", _invoiceNumber->text().toInt());
     invoicecloseEvent.exec();
     if (invoicecloseEvent.lastError().type() != QSqlError::NoError)
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Invoice"),
-                         invoicecloseEvent, __FILE__, __LINE__);
+      systemError(this, invoicecloseEvent.lastError().databaseText(), __FILE__, __LINE__);
     sReleaseNumber();
   }
 
@@ -1120,8 +1136,7 @@ void invoice::sReleaseNumber()
     invoiceReleaseNumber.bindValue(":number", _NumberGen);
     invoiceReleaseNumber.exec();
     if (invoiceReleaseNumber.lastError().type() != QSqlError::NoError)
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Releasing Unused Invoice Number"),
-                         invoiceReleaseNumber, __FILE__, __LINE__);
+      systemError(this, invoiceReleaseNumber.lastError().databaseText(), __FILE__, __LINE__);
     _NumberGen = -1;
   }
 }
@@ -1165,9 +1180,9 @@ void invoice::sCalculateTax()
   taxq.exec();
   if (taxq.first())
     _tax->setLocalValue(taxq.value("tax").toDouble());
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Calculating Tax Amounts"),
-                                taxq, __FILE__, __LINE__))
+  else if (taxq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, taxq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   // changing _tax fires sCalculateTotal()
@@ -1346,9 +1361,9 @@ void invoice::populateCMInfo()
   cm.exec();
   if(cm.first())
     _allocatedCM->setLocalValue(cm.value("amount").toDouble());
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Invoice Information"),
-                                cm, __FILE__, __LINE__))
+  else if (cm.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, cm.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   else
@@ -1370,9 +1385,9 @@ void invoice::populateCMInfo()
   cm.exec();
   if(cm.first())
     _outstandingCM->setLocalValue(cm.value("amount").toDouble());
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Invoice Information"),
-                                cm, __FILE__, __LINE__))
+  else if (cm.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, cm.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   else
@@ -1417,9 +1432,9 @@ void invoice::populateCCInfo()
   cc.exec();
   if(cc.first())
     _authCC->setLocalValue(cc.value("amount").toDouble());
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Customer Credit Card Information"),
-                                cc, __FILE__, __LINE__))
+  else if (cc.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, cc.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   else
@@ -1507,9 +1522,7 @@ bool invoice::sCheckInvoiceNumber()
         _invoiceNumber->setFocus();
       }
       else if (checkq.lastError().type() != QSqlError::NoError)
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error with Invoice Number %1")
-                           .arg(_invoiceNumber->text()),
-                           checkq, __FILE__, __LINE__);
+        systemError(this, invoiceCheckInvoiceNumber.lastError().text(), __FILE__, __LINE__);
       else
       {
         _invoiceNumber->setEnabled(false);

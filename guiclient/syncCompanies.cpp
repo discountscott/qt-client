@@ -27,8 +27,6 @@
 #include "storedProcErrorLookup.h"
 #include "version.h"
 
-#include "errorReporter.h"
-
 #define DEBUG   false
 
 // TODO: XDialog should have a default implementation that returns false
@@ -52,9 +50,9 @@ void syncCompanies::setVisible(bool visible)
 
   else if (! userHasPriv())
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                         tr("%1: Insufficient privileges to view this window")
-                         .arg(windowTitle()),__FILE__,__LINE__);
+    systemError(this,
+		tr("You do not have sufficient privilege to view this window"),
+		__FILE__, __LINE__);
     deleteLater();
   }
   else
@@ -103,9 +101,9 @@ void syncCompanies::sFillList()
          "ORDER BY period_start, period_end;");
   syncFillList.exec();
   _period->populate(syncFillList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Accounting Period Information"),
-                                syncFillList, __FILE__, __LINE__))
+  if (syncFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, syncFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -118,9 +116,9 @@ void syncCompanies::sFillList()
 
   syncFillList.exec();
   _company->populate(syncFillList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Company Information"),
-                                syncFillList, __FILE__, __LINE__))
+  if (syncFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, syncFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -139,9 +137,9 @@ void syncCompanies::sSync()
   lbaseq.exec("SELECT * FROM curr_symbol WHERE curr_base;");
   if (lbaseq.first())
     ; // keep the query results for later comparisons
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Currency Information"),
-                                lbaseq, __FILE__, __LINE__))
+  else if (lbaseq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, lbaseq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   else
@@ -196,9 +194,9 @@ void syncCompanies::sSync()
         continue;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Company Information"),
-                                  co, __FILE__, __LINE__))
+    else if (co.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, co.lastError().databaseText(), __FILE__, __LINE__);
       errorCount++;
       continue;
     }
@@ -288,9 +286,9 @@ void syncCompanies::sSync()
       rmq.exec();
       if (rmq.first())
         ; // good - keep going
-      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Privilege Information"),
-                                    rmq, __FILE__, __LINE__))
+      else if (rmq.lastError().type() != QSqlError::NoError)
       {
+        systemError(this, rmq.lastError().databaseText(), __FILE__, __LINE__);
         errorCount++;
         continue;
       }
@@ -320,9 +318,9 @@ void syncCompanies::sSync()
           continue;
         }
       }
-      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Metric Information"),
-                                    rmq, __FILE__, __LINE__))
+      else if (rmq.lastError().type() != QSqlError::NoError)
       {
+        systemError(this, rmq.lastError().databaseText(), __FILE__, __LINE__);
         continue;
       }
 
@@ -331,9 +329,9 @@ void syncCompanies::sSync()
       rmq.exec();
       if (rmq.first())
         ; // nothing to do
-      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Company Information"),
-                                    rmq, __FILE__, __LINE__))
+      else if (rmq.lastError().type() != QSqlError::NoError)
       {
+        systemError(this, rmq.lastError().databaseText(), __FILE__, __LINE__);
         errorCount++;
         continue;
       }
@@ -361,9 +359,9 @@ void syncCompanies::sSync()
         syncSync.exec();
         if (syncSync.first())
           ; // nothing to do
-        else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Profit Center Information"),
-                                      syncSync, __FILE__, __LINE__))
+        else if (syncSync.lastError().type() != QSqlError::NoError)
         {
+          systemError(this, syncSync.lastError().databaseText(), __FILE__, __LINE__);
           errorCount++;
           // don't break/continue - do as much as we can
         }
@@ -374,19 +372,19 @@ void syncCompanies::sSync()
           syncSync.bindValue(":prftcntr_number",  rmq.value("accnt_profit"));
           syncSync.bindValue(":prftcntr_descrip", rmq.value("prftcntr_descrip"));
           syncSync.exec();
-          if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Profit Center Information"),
-                                        syncSync, __FILE__, __LINE__))
+          if (syncSync.lastError().type() != QSqlError::NoError)
           {
+            systemError(this, syncSync.lastError().databaseText(), __FILE__, __LINE__);
             errorCount++;
             // don't break/continue - do as much as we can
           }
         }
       } // next profit center
-      if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Profit Center Information "),
-                                    rmq, __FILE__, __LINE__))
+      if (rmq.lastError().type() != QSqlError::NoError)
       {
+	systemError(this, rmq.lastError().databaseText(), __FILE__, __LINE__);
         errorCount++;
-        return;
+	return;
       }
 
       rmq.prepare("SELECT DISTINCT accnt_sub "
@@ -401,9 +399,9 @@ void syncCompanies::sSync()
         syncSync.exec();
         if (syncSync.first())
           ; // nothing to do
-        else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sub Account Information"),
-                                      syncSync, __FILE__, __LINE__))
+        else if (syncSync.lastError().type() != QSqlError::NoError)
         {
+          systemError(this, syncSync.lastError().databaseText(), __FILE__, __LINE__);
           errorCount++;
           // don't break/continue - do as much as we can
         }
@@ -414,19 +412,19 @@ void syncCompanies::sSync()
           syncSync.bindValue(":subaccnt_number",  rmq.value("accnt_sub"));
           syncSync.bindValue(":subaccnt_descrip", rmq.value("subaccnt_descrip"));
           syncSync.exec();
-          if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Sub Account Information"),
-                                        syncSync, __FILE__, __LINE__))
+          if (syncSync.lastError().type() != QSqlError::NoError)
           {
+            systemError(this, syncSync.lastError().databaseText(), __FILE__, __LINE__);
             errorCount++;
             // don't break/continue - do as much as we can
           }
         }
       } // next profit center
-      if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Sub Account Information"),
-                                    rmq, __FILE__, __LINE__))
+      if (rmq.lastError().type() != QSqlError::NoError)
       {
+	systemError(this, rmq.lastError().databaseText(), __FILE__, __LINE__);
         errorCount++;
-        return;
+	return;
       }
 
       // Now for what we really want - if the periods match then upsert trialbal
@@ -442,9 +440,9 @@ void syncCompanies::sSync()
       seq.exec("SELECT fetchGLSequence() AS sequence;");
       if (seq.first())
         sequence = seq.value("sequence").toInt();
-      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving GL Sequence"),
-                                    seq, __FILE__, __LINE__))
+      else if (seq.lastError().type() != QSqlError::NoError)
       {
+        systemError(this, seq.lastError().databaseText(), __FILE__, __LINE__);
         errorCount++;
         return;
       }
@@ -546,8 +544,8 @@ void syncCompanies::sSync()
           if (tbsync.lastError().type() != QSqlError::NoError)
           {
             rollback.exec();
-            ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Trial Balance Information"),
-                                 rperiod, __FILE__, __LINE__);
+            systemError(this, rperiod.lastError().databaseText(),
+                        __FILE__, __LINE__);
             errorCount++;
             break;
           }
@@ -555,8 +553,8 @@ void syncCompanies::sSync()
         else if (rperiod.lastError().type() != QSqlError::NoError)
         {
           rollback.exec();
-          ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Accounting Period Information"),
-                               rperiod, __FILE__, __LINE__);
+          systemError(this, rperiod.lastError().databaseText(),
+                      __FILE__, __LINE__);
           errorCount++;
           break;
         }
@@ -630,8 +628,8 @@ void syncCompanies::sSync()
           else if (laccnt.lastError().type() != QSqlError::NoError)
           {
             rollback.exec();
-            ErrorReporter::error(QtCriticalMsg, this, tr("Error Savng Account Information"),
-                                 laccnt, __FILE__, __LINE__);
+            systemError(this, laccnt.lastError().databaseText(),
+                        __FILE__, __LINE__);
             errorCount++;
             break;
           }
@@ -656,9 +654,9 @@ void syncCompanies::sSync()
               laccntups.bindValue(":accnt_id",	syncSync.value("accnt_id"));
               accntid = syncSync.value("accnt_id").toInt();
             }
-            else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Account Information"),
-                                          syncSync, __FILE__, __LINE__))
+            else if (syncSync.lastError().type() != QSqlError::NoError)
             {
+              systemError(this, syncSync.lastError().databaseText(), __FILE__, __LINE__);
               errorCount++;
               break;
             }
@@ -680,8 +678,8 @@ void syncCompanies::sSync()
           if (laccntups.lastError().type() != QSqlError::NoError)
           {
             rollback.exec();
-            ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Account Information"),
-                                 laccntups, __FILE__, __LINE__);
+            systemError(this, laccntups.lastError().databaseText(),
+                        __FILE__, __LINE__);
             errorCount++;
             break;
           }
@@ -798,8 +796,8 @@ void syncCompanies::sSync()
             if (lgl.lastError().type() != QSqlError::NoError)
             {
               rollback.exec();
-              ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving GL Transaction Information "),
-                                   lgl, __FILE__, __LINE__);
+              systemError(this, lgl.lastError().databaseText(),
+                          __FILE__, __LINE__);
               errorCount++;
               break;
             }
@@ -816,8 +814,8 @@ void syncCompanies::sSync()
         if (raccnt.lastError().type() != QSqlError::NoError)
         {
           rollback.exec();
-          ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Account Information "),
-                               raccnt, __FILE__, __LINE__);
+          systemError(this, raccnt.lastError().databaseText(),
+                      __FILE__, __LINE__);
           errorCount++;
           break;
         }
@@ -842,8 +840,8 @@ void syncCompanies::sSync()
       if (post.lastError().type() != QSqlError::NoError)
       {
         rollback.exec();
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Trial Balance Information"),
-                             post, __FILE__, __LINE__);
+        systemError(this, post.lastError().databaseText(),
+                    __FILE__, __LINE__);
         errorCount++;
         break;
       }
@@ -853,8 +851,8 @@ void syncCompanies::sSync()
       if (tbs.lastError().type() != QSqlError::NoError)
       {
         rollback.exec();
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Trial Balance Information "),
-                             tbs, __FILE__, __LINE__);
+        systemError(this, tbs.lastError().databaseText(),
+                    __FILE__, __LINE__);
         errorCount++;
         break;
       }
@@ -872,8 +870,8 @@ void syncCompanies::sSync()
         if (post.lastError().type() != QSqlError::NoError)
         {
           rollback.exec();
-          ErrorReporter::error(QtCriticalMsg, this, tr("Error Forward Updating Trial Balances"),
-                               post, __FILE__, __LINE__);
+          systemError(this, post.lastError().databaseText(),
+                      __FILE__, __LINE__);
           errorCount++;
           break;
         }
@@ -892,8 +890,8 @@ void syncCompanies::sSync()
       if (post.lastError().type() != QSqlError::NoError)
       {
         rollback.exec();
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Forward Updating Trial Balances"),
-                             post, __FILE__, __LINE__);
+        systemError(this, post.lastError().databaseText(),
+                    __FILE__, __LINE__);
         errorCount++;
         break;
       }
@@ -907,8 +905,8 @@ void syncCompanies::sSync()
       if (tbs.lastError().type() != QSqlError::NoError)
       {
         rollback.exec();
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Trial Balance Sync Information"),
-                             tbs, __FILE__, __LINE__);
+        systemError(this, tbs.lastError().databaseText(),
+                    __FILE__, __LINE__);
         errorCount++;
         break;
       }
@@ -929,8 +927,8 @@ void syncCompanies::sSync()
         if (post.lastError().type() != QSqlError::NoError)
         {
           rollback.exec();
-          ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Currency Revaluation Adjustments"),
-                               post, __FILE__, __LINE__);
+          systemError(this, post.lastError().databaseText(),
+                      __FILE__, __LINE__);
           errorCount++;
           break;
         }

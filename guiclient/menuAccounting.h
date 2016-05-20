@@ -140,9 +140,7 @@ class menuAccounting : public QObject
     void sTaxClasses();
     void sTaxAssignments();
     void sTaxRegistrations();
-    void sDspTax1099();
     void sDspTaxHistory();
-    void sDspTaxReturn();
 
     void sReconcileBankaccount();
     void sEnterAdjustment();
@@ -160,7 +158,6 @@ class menuAccounting : public QObject
     
     void sPrintStatementByCustomer();
     void sPrintStatementsByCustomerType();
-    void sPrintStatementsByCustomerGroup();
 
     void sCustomers();
 

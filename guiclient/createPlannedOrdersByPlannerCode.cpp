@@ -15,7 +15,6 @@
 #include <QSqlError>
 #include <metasql.h>
 #include "mqlutil.h"
-#include "errorReporter.h"
 
 createPlannedOrdersByPlannerCode::createPlannedOrdersByPlannerCode(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
   : XDialog(parent, name, modal, fl)
@@ -57,9 +56,9 @@ void createPlannedOrdersByPlannerCode::sCreate(ParameterList params)
 
   MetaSQLQuery mql = mqlLoad("schedule", "load");
   createCreate = mql.toQuery(params);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Creating Planned Orders By Planner Code"),
-                                createCreate, __FILE__, __LINE__))
+  if (createCreate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, createCreate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -78,9 +77,9 @@ void createPlannedOrdersByPlannerCode::sCreate(ParameterList params)
     rparams.append("itemsite_id", createCreate.value("itemsite_id"));
     MetaSQLQuery mql2 = mqlLoad("schedule", "create");
     create = mql2.toQuery(rparams);
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Creating Planned Orders By Planner Code"),
-                                  create, __FILE__, __LINE__))
+    if (create.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, create.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 

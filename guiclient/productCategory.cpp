@@ -12,7 +12,6 @@
 
 #include <QVariant>
 #include <QMessageBox>
-#include "errorReporter.h"
 
 productCategory::productCategory(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
   : XDialog(parent, name, modal, fl)
@@ -152,8 +151,9 @@ void productCategory::sSave()
       _prodcatid = productSave.value("prodcat_id").toInt();
     else
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Product Category Information"),
-                           productSave, __FILE__, __LINE__);
+      systemError(this, tr("A System Error occurred at %1::%2.")
+                        .arg(__FILE__)
+                        .arg(__LINE__) );
       return;
     }
 

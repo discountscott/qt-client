@@ -25,7 +25,6 @@
 #include "creditMemo.h"
 #include "creditMemoItem.h"
 #include "mqlutil.h"
-#include "errorReporter.h"
 
 creditMemoEditList::creditMemoEditList(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -110,9 +109,9 @@ void creditMemoEditList::sFillList()
   MetaSQLQuery mql = mqlLoad("creditMemo", "editlist");
   creditFillList = mql.toQuery(params);
   _cmhead->populate(creditFillList, true);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Credit Memo Information"),
-                                creditFillList, __FILE__, __LINE__))
+  if (creditFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, creditFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

@@ -18,7 +18,6 @@
 
 #include "inputManager.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 #define DEBUG false
 
@@ -92,10 +91,10 @@ void printWoTraveler::sHandleOptions(int pWoid)
                    "LIMIT 1;" );
     check.bindValue(":wo_id", pWoid);
     check.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Traveler Information"),
-                                  check, __FILE__, __LINE__))
+    if (check.lastError().type() != QSqlError::NoError)
     {
-       return;
+      systemError(this, check.lastError().databaseText(), __FILE__, __LINE__);
+      return;
     }
     if (check.first())
     {
@@ -116,9 +115,9 @@ void printWoTraveler::sHandleOptions(int pWoid)
                    " AND (wo_id=:wo_id) );" );
     check.bindValue(":wo_id", pWoid);
     check.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Traveler Information"),
-                                  check, __FILE__, __LINE__))
+    if (check.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, check.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
     if (check.first())
@@ -150,9 +149,7 @@ void printWoTraveler::sPrint()
   if (orReport::beginMultiPrint(&printer, userCanceled) == false)
   {
     if(!userCanceled)
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                         tr("%1: Could not initialize printing system "
-                            "for multiple reports. ").arg(windowTitle()),__FILE__,__LINE__);
+      systemError(this, tr("Could not initialize printing system for multiple reports."));
     return;
   }
 
@@ -198,9 +195,9 @@ void printWoTraveler::sPrint()
         _errorPrinting = true;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Printing Traveler"),
-                                  query, __FILE__, __LINE__))
+    else if (query.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, query.lastError().databaseText(), __FILE__, __LINE__);
       _errorPrinting = true;
     }
   }
@@ -236,9 +233,9 @@ void printWoTraveler::sPrint()
         _errorPrinting = true;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Printing Traveler"),
-                                  query, __FILE__, __LINE__))
+    else if (query.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, query.lastError().databaseText(), __FILE__, __LINE__);
       _errorPrinting = true;
     }
   }
@@ -268,15 +265,14 @@ void printWoTraveler::sPrint()
       int result = release.value("result").toInt();
       if (result < 0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Printing Traveler"),
-                               storedProcErrorLookup("releaseWo", result),
-                               __FILE__, __LINE__);
+        systemError(this, storedProcErrorLookup("releaseWo", result),
+                    __FILE__, __LINE__);
         return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Printing Traveler"),
-                                  release, __FILE__, __LINE__))
+    else if (release.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, release.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 

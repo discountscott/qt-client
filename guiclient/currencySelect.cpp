@@ -11,7 +11,6 @@
 #include "currencySelect.h"
 
 #include <QSqlError>
-#include "errorReporter.h"
 
 currencySelect::currencySelect(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -61,9 +60,9 @@ void currencySelect::sPopulate()
     _currAbbr->setText(currencyPopulate.value("country_curr_abbr").toString());
     _currSymbol->setText(currencyPopulate.value("country_curr_symbol").toString());
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Currency Information"),
-                                currencyPopulate, __FILE__, __LINE__))
+  else if (currencyPopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, currencyPopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

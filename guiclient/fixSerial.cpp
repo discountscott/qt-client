@@ -17,7 +17,6 @@
 #include <QSqlError>
 
 #include <metasql.h>
-#include "errorReporter.h"
 
 fixSerial::fixSerial(QWidget* parent, const char * name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -72,7 +71,6 @@ void fixSerial::sFillList()
 		"    AND d.adnum = a.attnum"
 		"    AND pg_catalog.pg_get_expr(d.adbin, d.adrelid) ~* 'nextval'"
 		"    AND a.atthasdef "
-                "    AND pg_class.relkind != 'f'" // #27517 do not include foreign tables (relkind = 'f')
 		"ORDER BY relname;" ;
 
   XSqlQuery relq;
@@ -103,9 +101,9 @@ void fixSerial::sFillList()
     maxq = maxMql.toQuery(params);
     if (maxq.first())
       maxval = maxq.value("maxval").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Column Information"),
-                                  maxq, __FILE__, __LINE__))
+    else if (maxq.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, maxq.lastError().databaseText(), __FILE__, __LINE__);
       continue;
     }
 
@@ -113,9 +111,9 @@ void fixSerial::sFillList()
     seqq = seqMql.toQuery(params);
     if (seqq.first())
       currval = seqq.value("currval").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Column Information"),
-                                  seqq, __FILE__, __LINE__))
+    else if (seqq.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, seqq.lastError().databaseText(), __FILE__, __LINE__);
       continue;
     }
 
@@ -141,9 +139,9 @@ void fixSerial::sFillList()
   }
 
   QApplication::restoreOverrideCursor();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Column Information"),
-                                relq, __FILE__, __LINE__))
+  if (relq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, relq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -169,9 +167,9 @@ bool fixSerial::fixOne(XTreeWidgetItem *pItem)
   fixfixOne.bindValue(":value",		pItem->text(4));
 
   fixfixOne.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Column Information"),
-                                fixfixOne, __FILE__, __LINE__))
+  if (fixfixOne.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, fixfixOne.lastError().databaseText(), __FILE__, __LINE__);
     return false;
   }
 

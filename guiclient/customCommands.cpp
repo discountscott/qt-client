@@ -16,7 +16,6 @@
 
 #include "customCommand.h"
 #include "guiclient.h"
-#include "errorReporter.h"
 
 customCommands::customCommands(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -80,9 +79,9 @@ void customCommands::sDelete()
   customDelete.bindValue(":cmd_id", _commands->id());
   if(customDelete.exec())
     sFillList();
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Custom Command"),
-                                customDelete, __FILE__, __LINE__))
+  else if (customDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, customDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -101,9 +100,9 @@ void customCommands::sFillList()
          "        'Manufacture','CRM','Sales','Accounting','System'))) "
          " ORDER BY cmd_module, cmd_title;");
   _commands->populate(customFillList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Custom Command Information"),
-                                customFillList, __FILE__, __LINE__))
+  if (customFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, customFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

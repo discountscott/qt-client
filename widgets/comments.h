@@ -70,7 +70,7 @@ class XTUPLEWIDGETS_EXPORT Comments : public QWidget
       BOMHead,		BOMItem,
       BOOHead,		BOOItem,
       CRMAccount,	Contact,	Customer,
-      Employee,         ExchangeRate,   Incident,
+      Employee,         Incident,
       Item,		ItemSite,	ItemSource,
       Location,		LotSerial,
       Opportunity,

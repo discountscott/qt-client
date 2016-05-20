@@ -34,7 +34,6 @@ dspSummarizedSales::dspSummarizedSales(QWidget* parent, const char*, Qt::WindowF
   parameterWidget()->appendComboBox(tr("Currency"), "curr_id", XComboBox::Currencies);
   parameterWidget()->append(tr("Currency Pattern"), "currConcat_pattern", ParameterWidget::Text);
   parameterWidget()->append(tr("Customer"),   "cust_id",   ParameterWidget::Customer);
-  parameterWidget()->append(tr("Customer P/O Number"), "poNumber", ParameterWidget::Text);
   parameterWidget()->append(tr("Customer Ship-to"),   "shipto_id",   ParameterWidget::Shipto);
   parameterWidget()->appendComboBox(tr("Customer Group"), "custgrp_id", XComboBox::CustomerGroups);
   parameterWidget()->append(tr("Customer Group Pattern"), "custgrp_pattern", ParameterWidget::Text);
@@ -44,7 +43,6 @@ dspSummarizedSales::dspSummarizedSales(QWidget* parent, const char*, Qt::WindowF
   parameterWidget()->appendComboBox(tr("Product Category"), "prodcat_id", XComboBox::ProductCategories);
   parameterWidget()->append(tr("Product Category Pattern"), "prodcat_pattern", ParameterWidget::Text);
   parameterWidget()->appendComboBox(tr("Sales Rep."), "salesrep_id", XComboBox::SalesReps);
-  parameterWidget()->appendComboBox(tr("Sale Type"), "saletype_id", XComboBox::SaleTypes);
   parameterWidget()->append(tr("Include Misc. Items"), "includeMisc", ParameterWidget::Exists, true);
   if (_metrics->boolean("MultiWhs"))
     parameterWidget()->append(tr("Site"), "warehous_id", ParameterWidget::Site);
@@ -162,9 +160,9 @@ bool dspSummarizedSales::setParams(ParameterList & params)
 
 void dspSummarizedSales::sPopulateMenu(QMenu *pMenu, QTreeWidgetItem*, int)
 {
-  //QAction *menuItem;
+  QAction *menuItem;
 
-  (void)pMenu->addAction(tr("View Sales Detail..."), this, SLOT(sViewHistory()));
+  menuItem = pMenu->addAction(tr("View Sales Detail..."), this, SLOT(sViewHistory()));
 
 }
 

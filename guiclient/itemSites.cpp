@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2015 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -22,7 +22,6 @@
 #include "itemSite.h"
 #include "parameterwidget.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 itemSites::itemSites(QWidget* parent, const char*, Qt::WindowFlags fl)
     : display(parent, "itemSites", fl)
@@ -42,7 +41,6 @@ itemSites::itemSites(QWidget* parent, const char*, Qt::WindowFlags fl)
   parameterWidget()->append(tr("Item"), "item_id", ParameterWidget::Item);
   parameterWidget()->appendComboBox(tr("Planner Code"), "plancode_id", XComboBox::PlannerCodes);
   parameterWidget()->append(tr("Planner Code Pattern"), "plancode_pattern", ParameterWidget::Text);
-  parameterWidget()->append(tr("Location Controlled"), "loc_cntrl", ParameterWidget::CheckBox);
   parameterWidget()->append(tr("Show Inactive"), "showInactive", ParameterWidget::Exists);
   if (_metrics->boolean("MultiWhs"))
     parameterWidget()->append(tr("Site"), "warehous_id", ParameterWidget::Site);
@@ -166,9 +164,7 @@ void itemSites::sCopy()
     int result = itemCopy.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Copying Item Site"),
-                             storedProcErrorLookup("copyItemSite", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("copyItemSite", result), __FILE__, __LINE__);
       return;
     }
     ParameterList params;
@@ -187,23 +183,21 @@ void itemSites::sCopy()
         int result = itemCopy.value("result").toInt();
         if (result < 0)
         {
-          ErrorReporter::error(QtCriticalMsg, this, tr("Error Copying Item Site"),
-                                 storedProcErrorLookup("deleteItemSite", result),
-                                 __FILE__, __LINE__);
+          systemError(this, storedProcErrorLookup("deleteItemSite", result), __FILE__, __LINE__);
           return;
         }
       }
-      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Copying Item Site"),
-                                    itemCopy, __FILE__, __LINE__))
+      else if (itemCopy.lastError().type() != QSqlError::NoError)
       {
+        systemError(this, itemCopy.lastError().databaseText(), __FILE__, __LINE__);
         return;
       }
     }
     sFillList();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Copying Item Site"),
-                                itemCopy, __FILE__, __LINE__))
+  else if (itemCopy.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, itemCopy.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -226,16 +220,14 @@ void itemSites::sDelete()
     int result = itemDelete.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Item Site"),
-                             storedProcErrorLookup("deleteItemSite", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("deleteItemSite", result), __FILE__, __LINE__);
       return;
     }
     sFillList();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Item Site"),
-                                itemDelete, __FILE__, __LINE__))
+  else if (itemDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, itemDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

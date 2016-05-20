@@ -107,7 +107,6 @@ class salesOrder : public XWidget, public Ui::salesOrder
     virtual void        sViewPR();
     virtual void        sPopulateShipments();
     virtual void        sViewItemWorkbench();
-    virtual bool        creditLimitCheck();
 
   protected slots:
     virtual void  languageChange();
@@ -127,7 +126,6 @@ class salesOrder : public XWidget, public Ui::salesOrder
     bool    deleteForCancel();
 
     bool    _saved;
-    bool    _saving;
     bool    _calcfreight;
     int     _orderNumberGen;
     double  _freightCache;

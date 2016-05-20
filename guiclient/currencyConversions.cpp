@@ -24,7 +24,6 @@
 #include "currency.h"
 #include "datecluster.h"
 #include "xcombobox.h"
-#include "errorReporter.h"
 
 currencyConversions::currencyConversions(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -173,9 +172,9 @@ void currencyConversions::sDelete()
 	      "WHERE curr_rate_id = :curr_rate_id");
     currencyDelete.bindValue(":curr_rate_id", _conversionRates->id());
     currencyDelete.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Currency Exchange Rate"),
-                                  currencyDelete, __FILE__, __LINE__))
+    if (currencyDelete.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, currencyDelete.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
     sFillList();
@@ -212,9 +211,9 @@ void currencyConversions::sFillList()
     return;
   currencyFillList = mql.toQuery(params);
   _conversionRates->populate(currencyFillList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Currency Exchange Rates"),
-                                currencyFillList, __FILE__, __LINE__))
+  if (currencyFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, currencyFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

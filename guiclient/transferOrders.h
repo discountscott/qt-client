@@ -36,7 +36,6 @@ public slots:
     virtual void sNew();
     virtual void sPopulateMenu( QMenu * pMenu, QTreeWidgetItem * pSelected );
     virtual void sPrint();
-    virtual void sPrintForms();
     virtual void sPrintPackingList();
     virtual void sRelease();
     virtual void sView();

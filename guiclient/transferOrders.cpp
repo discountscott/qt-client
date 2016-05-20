@@ -21,7 +21,6 @@
 #include "mqlutil.h"
 #include "copyTransferOrder.h"
 #include "issueToShipping.h"
-#include "printToForm.h"
 #include "storedProcErrorLookup.h"
 #include "transferOrder.h"
 #include "printPackingList.h"
@@ -241,16 +240,6 @@ void transferOrders::sDelete()
   }
 }
 
-void transferOrders::sPrintForms()
-{   
-  ParameterList params;
-  params.append("tohead_id", _to->id());
-
-  printToForm newdlg(this, "", true);
-  newdlg.set(params);
-  newdlg.exec();
-}
-
 void transferOrders::sPrintPackingList()
 {
   ParameterList params;
@@ -365,9 +354,6 @@ void transferOrders::sPopulateMenu(QMenu *pMenu, QTreeWidgetItem *pSelected)
   }
 
   menuItem = pMenu->addAction(tr("Copy..."), this, SLOT(sCopy()));
-  menuItem->setEnabled(_privileges->check("MaintainTransferOrders"));
-
-  menuItem = pMenu->addAction(tr("Print Transfer Order Form..."), this, SLOT(sPrintForms()));
   menuItem->setEnabled(_privileges->check("MaintainTransferOrders"));
 
   if (item->altId() == 2)

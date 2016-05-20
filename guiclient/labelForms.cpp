@@ -17,7 +17,6 @@
 #include <parameter.h>
 
 #include "labelForm.h"
-#include "errorReporter.h"
 
 labelForms::labelForms(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -112,9 +111,9 @@ void labelForms::sFillList()
             "ORDER BY labelform_name;");
   labelFillList.exec();
   _labelforms->populate(labelFillList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Label Information"),
-                                labelFillList, __FILE__, __LINE__))
+  if (labelFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, labelFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

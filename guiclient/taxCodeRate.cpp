@@ -12,7 +12,6 @@
 
 #include <QMessageBox>
 #include <QSqlError>
-#include "errorReporter.h"
 
 taxCodeRate::taxCodeRate(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -75,9 +74,9 @@ enum SetResponse taxCodeRate::set( const ParameterList & pParams )
 		{
 		  _dates->setStartDate(maxdate.value("max_expires").toDate());
 		}
-        else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Tax Rate Information"),
-                                      maxdate, __FILE__, __LINE__))
+		else if (maxdate.lastError().type() != QSqlError::NoError)
         {
+	      systemError(this, maxdate.lastError().databaseText(), __FILE__, __LINE__);
           return UndefinedError;
         }
 	  }
@@ -85,10 +84,10 @@ enum SetResponse taxCodeRate::set( const ParameterList & pParams )
       taxet.exec("SELECT NEXTVAL('taxrate_taxrate_id_seq') AS taxrate_id");
       if (taxet.first())
         _taxrateid = taxet.value("taxrate_id").toInt();
-      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Tax Rate Information"),
-                                    taxet, __FILE__, __LINE__))
+      else if (taxet.lastError().type() != QSqlError::NoError)
       {
-        return UndefinedError;
+	    systemError(this, taxet.lastError().databaseText(), __FILE__, __LINE__);
+		return UndefinedError;
       }
 	}
     else if (param.toString() == "edit")
@@ -183,9 +182,9 @@ void taxCodeRate::sSave()
   taxSave.bindValue(":taxrate_expires", _dates->endDate()); 
 
   taxSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Tax Rate Information"),
-                                taxSave, __FILE__, __LINE__))
+  if (taxSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, taxSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -207,9 +206,9 @@ void taxCodeRate::sPopulate()
 	_flat->setId(taxPopulate.value("taxrate_curr_id").toInt());
 	_flat->setLocalValue(taxPopulate.value("taxrate_amount").toDouble());
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Tax Rate Information"),
-                                taxPopulate, __FILE__, __LINE__))
+  else if (taxPopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, taxPopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

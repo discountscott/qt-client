@@ -34,9 +34,9 @@ bool package::userHasPriv(const int pMode)
     su.exec("SELECT isDBA() as rolsuper;");
     if (su.first())
       canmaintain = su.value("rolsuper").toBool();
-    else if (ErrorReporter::error(QtCriticalMsg, 0, tr("Error Retrieving Privilege Information"),
-                                  su, __FILE__, __LINE__))
+    else if (su.lastError().type() != QSqlError::NoError)
     {
+      systemError(0, su.lastError().databaseText(), __FILE__, __LINE__);
       return false;
     }
   }
@@ -65,9 +65,9 @@ void package::setVisible(bool visible)
 
   else if (! userHasPriv(_mode))
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                         tr("%1: Insufficient privileges to view this window ")
-                         .arg(windowTitle()),__FILE__,__LINE__);
+    systemError(this,
+		tr("You do not have sufficient privilege to view this window"),
+		__FILE__, __LINE__);
     reject();
   }
   else
@@ -183,9 +183,9 @@ void package::sSave()
     packageSave.exec("SELECT NEXTVAL('pkghead_pkghead_id_seq') AS _pkghead_id");
     if (packageSave.first())
       _pkgheadid = packageSave.value("_pkghead_id").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Package Information"),
-                                  packageSave, __FILE__, __LINE__))
+    else if (packageSave.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, packageSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -233,9 +233,9 @@ void package::sSave()
   packageSave.bindValue(":pkghead_notes",    _notes->toPlainText());
   packageSave.bindValue(":pkghead_indev",    _indev->isChecked());
   packageSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Package Information"),
-                                packageSave, __FILE__, __LINE__))
+  if (packageSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, packageSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -262,15 +262,14 @@ void package::sSave()
       int result = eq.value("result").toInt();
       if (result < 0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Package Information"),
-                               storedProcErrorLookup("funcname", result),
-                               __FILE__, __LINE__);
+        systemError(this, storedProcErrorLookup(funcname, result),
+                    __FILE__, __LINE__);
         return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Package Information"),
-                                  eq, __FILE__, __LINE__))
+    else if (eq.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, eq.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -301,9 +300,9 @@ void package::populate()
     _indev->setChecked(packagepopulate.value("pkghead_indev").toBool());
     if (DEBUG)    qDebug("package::populate() select pkghead complete");
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Package Information"),
-                                packagepopulate, __FILE__, __LINE__))
+  else if (packagepopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, packagepopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -333,9 +332,9 @@ void package::populate()
   if (DEBUG)    qDebug("package::populate() select pkgitem exec'ed");
   _rec->populate(packagepopulate);
   if (DEBUG)    qDebug("package::populate() populate pkgitem done");
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Package Information"),
-                                packagepopulate, __FILE__, __LINE__))
+  if (packagepopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, packagepopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 

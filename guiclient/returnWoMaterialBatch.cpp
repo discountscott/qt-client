@@ -14,7 +14,6 @@
 #include <QMessageBox>
 #include "inputManager.h"
 #include "distributeInventory.h"
-#include "errorReporter.h"
 
 returnWoMaterialBatch::returnWoMaterialBatch(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
   : XDialog(parent, name, modal, fl)
@@ -132,8 +131,10 @@ void returnWoMaterialBatch::sReturn()
             if (returnReturn.value("result").toInt() < 0)
             {
               rollback.exec();
-              ErrorReporter::error(QtCriticalMsg, this, tr("Error Returning Work Order Material Batch, W/O ID #%1")
-                                   .arg(_wo->id()),returnReturn, __FILE__, __LINE__);
+              systemError( this, tr("A System Error occurred at returnWoMaterialBatch::%1, W/O ID #%2, Error #%3.")
+                                 .arg(__LINE__)
+                                 .arg(_wo->id())
+                                 .arg(returnReturn.value("result").toInt()) );
               return;
             }
             if (distributeInventory::SeriesAdjust(returnReturn.value("result").toInt(), this) == XDialog::Rejected)
@@ -146,8 +147,9 @@ void returnWoMaterialBatch::sReturn()
           else
           {
             rollback.exec();
-            ErrorReporter::error(QtCriticalMsg, this, tr("Error Returning Work Order Material Batch, W/O ID #%1")
-                                 .arg(_wo->id()),returnReturn, __FILE__, __LINE__);\
+            systemError( this, tr("A System Error occurred at returnWoMaterialBatch::%1, W/O ID #%2.")
+                               .arg(__LINE__)
+                               .arg(_wo->id()) );
             return;
           }
           returnReturn.exec("COMMIT;");

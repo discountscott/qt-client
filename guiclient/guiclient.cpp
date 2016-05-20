@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2015 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -279,10 +279,6 @@ void Action::init(QWidget *pParent, const char *pName, const QString &pDisplayNa
   if(!pEnabled.isEmpty())
     setData(pEnabled);
   __menuEvaluate(this);
-  if (QRegExp(".*\\.setup").exactMatch(pName))
-  {
-    setMenuRole(QAction::NoRole);
-  }
 }
 
 /** @class xTupleGuiClientInterface
@@ -416,9 +412,10 @@ GUIClient::GUIClient(const QString &pDatabaseURL, const QString &pUsername)
     _endOfTime = _GGUIClient.value("eot").toDate();
   }
   else
-    ErrorReporter::error(QtCriticalMsg, this, tr("Critical Error"),
-                        tr("Please immediately log out and contact your "
-                           "Systems Administrator"),_GGUIClient, __FILE__, __LINE__);
+    systemError( this, tr( "A Critical Error occurred at %1::%2.\n"
+                           "Please immediately log out and contact your Systems Adminitrator." )
+                       .arg(__FILE__)
+                       .arg(__LINE__) );
 
   /*  TODO: either separate validators for extprice, purchprice, and salesprice
             or replace every field that uses _moneyVal, _negMoneyVal, _priceVal, and _costVal
@@ -639,8 +636,7 @@ bool GUIClient::singleCurrency()
   if (currCount.first())
     retValue = (currCount.value("count").toInt() <= 1);
   else
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Currency Information"),
-                       currCount, __FILE__, __LINE__);
+    systemError(this, currCount.lastError().databaseText(), __FILE__, __LINE__);
   return retValue;
 }
 
@@ -1044,7 +1040,7 @@ void GUIClient::sTick()
     if (!QSqlDatabase::database().isOpen())
     {
       if  (QMessageBox::question(this, tr("Database disconnected"),
-                                tr("It appears that you have been disconnected from the "
+                                tr("It appears that the you've been disconnected from the"
                                    "database. Select Yes to try to reconnect or "
                                    "No to terminate the application."),
                                    QMessageBox::Yes,
@@ -1118,38 +1114,32 @@ void GUIClient::sSystemMessageAdded()
 {
   emit systemMessageAdded();
 
-  XSqlQuery msg;
-  msg.exec("SELECT msguser_id"
-           "  FROM msg"
-           "  JOIN msguser ON msguser_msg_id = msg_id"
-           " WHERE msguser_username=getEffectiveXtUser()"
-           "   AND CURRENT_TIMESTAMP BETWEEN msg_scheduled AND msg_expires"
-           "   AND msguser_viewed IS NULL;" );
-  if (msg.first())
-  {
-    ParameterList params;
-    params.append("mode", "acknowledge");
-    do
-    {
-      int id = msg.value("msguser_id").toInt();
-      systemMessage *newdlg = systemMessage::windowForId(id);
-      if (newdlg)
-      {
-        qDebug() << "raising window for id" << id << newdlg;
-        newdlg->show();
-        newdlg->raise();
-        newdlg->activateWindow();
-      }
-      else
-      {
-        qDebug() << "opening new window for id" << id << newdlg;
-        params.append("msguser_id", id);
-        newdlg = new systemMessage();
-        newdlg->set(params);
-        omfgThis->handleNewWindow(newdlg);
-      }
-    } while (msg.next());
-  }
+  //  Grab any new System Messages
+          XSqlQuery msg;
+          msg.exec( "SELECT msguser_id "
+                    "FROM msg, msguser "
+                    "WHERE ( (msguser_username=getEffectiveXtUser())"
+                    " AND (msguser_msg_id=msg_id)"
+                    " AND (CURRENT_TIMESTAMP BETWEEN msg_scheduled AND msg_expires)"
+                    " AND (msguser_viewed IS NULL) );" );
+          if (msg.first())
+          {
+            ParameterList params;
+            params.append("mode", "acknowledge");
+
+            systemMessage *newdlg = new systemMessage();
+            newdlg->set(params);
+
+            do
+            {
+              ParameterList params;
+              params.append("msguser_id", msg.value("msguser_id").toInt());
+
+              newdlg->set(params);
+              omfgThis->handleNewWindow(newdlg);
+            }
+            while (msg.next());
+          }
 }
 
 /** @name Data Update Slots
@@ -1818,6 +1808,7 @@ void GUIClient::sCustomCommand()
     QString cmd = GCustomCommand.value("cmd_executable").toString();
     if(cmd.toLower() == "!customuiform")
     {
+      bool haveParams = false;
       ParameterList params;
       bool asDialog = false;
       QString asName;
@@ -1869,6 +1860,7 @@ void GUIClient::sCustomCommand()
             var = XVariant::decode(type, value);
           if(active)
           {
+            haveParams = true;
             params.append(name, var);
           }
 // end copied code from OpenRPT/renderapp
@@ -2461,12 +2453,47 @@ void GUIClient::loadScriptGlobals(QScriptEngine * engine)
   mainwindowval.setProperty("cNoReportDefinition", QScriptValue(engine, cNoReportDefinition),
                         QScriptValue::ReadOnly | QScriptValue::Undeletable);
 
+  QScriptValue inputmanagerval = engine->newQObject(_inputManager);
+  engine->globalObject().setProperty("InputManager", inputmanagerval);
+
+  // #defines from inputmanager.h
+  inputmanagerval.setProperty("cBCWorkOrder", QScriptValue(engine, cBCWorkOrder),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCWorkOrderMaterial", QScriptValue(engine, cBCWorkOrderMaterial),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCWorkOrderOperation", QScriptValue(engine, cBCWorkOrderOperation),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCSalesOrder", QScriptValue(engine, cBCSalesOrder),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCSalesOrderLineItem", QScriptValue(engine, cBCSalesOrderLineItem),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCItemSite", QScriptValue(engine, cBCItemSite),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCItem", QScriptValue(engine, cBCItem),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCUPCCode", QScriptValue(engine, cBCUPCCode),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCEANCode", QScriptValue(engine, cBCEANCode),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCCountTag", QScriptValue(engine, cBCCountTag),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCLocation", QScriptValue(engine, cBCLocation),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCLocationIssue", QScriptValue(engine, cBCLocationIssue),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCLocationContents", QScriptValue(engine, cBCLocationContents),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCUser", QScriptValue(engine, cBCUser),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCTransferOrder", QScriptValue(engine, cBCTransferOrder),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCTransferOrderLineItem", QScriptValue(engine, cBCTransferOrderLineItem),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+  inputmanagerval.setProperty("cBCLotSerialNumber", QScriptValue(engine, cBCLotSerialNumber),
+                        QScriptValue::ReadOnly | QScriptValue::Undeletable);
+
   setupScriptApi(engine);
   setupSetupApi(engine);
-
-  // TODO: Make all classes work this way instead of setup* as above?
-  // TODO: This interface sets this instance as the global. we can do better.
-  _inputManager->scriptAPI(engine, "InputManager");
 }
 
 void GUIClient::addDocumentWatch(QString path, int id)

@@ -1502,7 +1502,6 @@ void XTreeWidget::sShowMenu(const QPoint &pntThis)
       copyMenu->addAction(tr("All"),  this, SLOT(sCopyVisibleToClipboard()));
       copyMenu->addAction(tr("Row"),  this, SLOT(sCopyRowToClipboard()));
       copyMenu->addAction(tr("Cell"),  this, SLOT(sCopyCellToClipboard()));
-      copyMenu->addAction(tr("Column"),this, SLOT(sCopyColumnToClipboard()));
       _menu->addSeparator();
       _menu->addAction(tr("Export As..."),  this, SLOT(sExport()));
     }
@@ -1975,38 +1974,6 @@ QVariant XTreeWidgetItem::rawValue(const QString pName)
     return data(colIdx, Xt::RawRole);
 }
 
-void XTreeWidgetItem::setNumber(int pColumn, const QVariant pValue, const QString pNumericRole)
-{
-  setData(pColumn, Xt::RawRole, pValue);
-  if (!setNumericRole(pColumn, pNumericRole))
-  {
-    // pValue is not a valid number
-    setText(pColumn, pValue);
-  }
-}
-
-void XTreeWidgetItem::setDate(int pColumn, const QVariant pDate)
-{
-  setData(pColumn, Xt::RawRole, pDate);
-  setData(pColumn, Qt::DisplayRole, formatDate(pDate.toDate()));
-}
-
-bool XTreeWidgetItem::setNumericRole(int pColIdx, const QString pRole)
-{
-  bool canConvert = false;
-
-  if (pColIdx >= 0)
-  {
-    double value = data(pColIdx, Xt::RawRole).toDouble(&canConvert);
-
-    if (canConvert)
-    {
-      setData(pColIdx, Qt::DisplayRole, QLocale().toString(value, 'f', decimalPlaces(pRole)));
-    }
-  }
-  return canConvert;
-}
-
 /* Calculate the total for a particular XTreeWidgetItem, including any children.
    pcol is the column for which we want the total.
    prole is the value of xttotalrole for which we want the total.
@@ -2311,28 +2278,6 @@ void XTreeWidget::sCopyVisibleToClipboard()
   clipboard->setMimeData(mime);
 }
 
-void XTreeWidget::sCopyColumnToClipboard()
-{
-  QTextEdit       text;
-  QMimeData       *mime      = new QMimeData();
-  QClipboard      *clipboard = QApplication::clipboard();
-  QString opText = "";
-  XTreeWidgetItem *item = topLevelItem(0);
-  if (item)
-  {
-    for (QModelIndex idx = indexFromItem(item); idx.isValid(); idx = indexBelow(idx))
-    {
-      item = (XTreeWidgetItem *)itemFromIndex(idx);
-      if (item)
-        opText = opText + item->text(currentColumn()) + "\t\r\n";
-    }
-  }
-  text.setText(opText);
-  mime->setText(text.toPlainText());
-  mime->setHtml(text.toHtml());
-  clipboard->setMimeData(mime);
-}
-
 void XTreeWidget::sSearch(const QString &pTarget)
 {
   clearSelection();
@@ -2368,7 +2313,8 @@ QString XTreeWidget::toTxt() const
   XTreeWidgetItem *item = topLevelItem(0);
   if (item)
   {
-    for (QModelIndex idx = indexFromItem(item); idx.isValid(); idx = indexBelow(idx))
+    QModelIndex idx = indexFromItem(item);
+    while (idx.isValid())
     {
       item = (XTreeWidgetItem *)itemFromIndex(idx);
       if (item)
@@ -2381,6 +2327,7 @@ QString XTreeWidget::toTxt() const
         }
       }
       opText = opText + line + "\r\n";
+      idx    = indexBelow(idx);
     }
   }
   return opText;
@@ -2409,7 +2356,8 @@ QString XTreeWidget::toCsv() const
   XTreeWidgetItem *item = topLevelItem(0);
   if (item)
   {
-    for (QModelIndex idx = indexFromItem(item); idx.isValid(); idx = indexBelow(idx))
+    QModelIndex idx = indexFromItem(item);
+    while (idx.isValid())
     {
       colcount = 0;
       item     = (XTreeWidgetItem *)itemFromIndex(idx);
@@ -2432,6 +2380,7 @@ QString XTreeWidget::toCsv() const
         }
       }
       opText = opText + line + "\r\n";
+      idx    = indexBelow(idx);
     }
   }
   return opText;
@@ -2559,11 +2508,13 @@ QString XTreeWidget::toHtml() const
   XTreeWidgetItem *item = topLevelItem(0);
   if (item)
   {
-    for (QModelIndex idx = indexFromItem(item); idx.isValid(); idx = indexBelow(idx))
+    QModelIndex idx = indexFromItem(item);
+    while (idx.isValid())
     {
       item = (XTreeWidgetItem *)itemFromIndex(idx);
       if (item)
         rowcnt++;
+      idx = indexBelow(idx);
     }
   }
 
@@ -2585,7 +2536,8 @@ QString XTreeWidget::toHtml() const
   item = topLevelItem(0);
   if (item)
   {
-    for (QModelIndex idx = indexFromItem(item); idx.isValid(); idx = indexBelow(idx))
+    QModelIndex idx = indexFromItem(item);
+    while (idx.isValid())
     {
       item = (XTreeWidgetItem *)itemFromIndex(idx);
       if (item)
@@ -2614,6 +2566,7 @@ QString XTreeWidget::toHtml() const
           }
         }
       }
+      idx = indexBelow(idx);
     }
   }
   return doc->toHtml();

@@ -14,7 +14,7 @@ to be bound by its terms.</comment>
     <x>0</x>
     <y>0</y>
     <width>486</width>
-    <height>235</height>
+    <height>216</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -63,22 +63,12 @@ to be bound by its terms.</comment>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QRadioButton" name="_usePostedCosts">
-        <property name="text">
-         <string>Use Posted Costs</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
        <widget class="QRadioButton" name="_useStandardCosts">
         <property name="text">
          <string>Use Standard Costs</string>
         </property>
         <property name="checked">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
        </widget>
       </item>
@@ -138,19 +128,16 @@ to be bound by its terms.</comment>
    <class>DLineEdit</class>
    <extends>QWidget</extends>
    <header>datecluster.h</header>
-   <container>1</container>
   </customwidget>
   <customwidget>
    <class>ParameterGroup</class>
    <extends>QGroupBox</extends>
    <header>parametergroup.h</header>
-   <container>1</container>
   </customwidget>
   <customwidget>
    <class>WarehouseGroup</class>
    <extends>QGroupBox</extends>
    <header>warehousegroup.h</header>
-   <container>1</container>
   </customwidget>
  </customwidgets>
  <tabstops>

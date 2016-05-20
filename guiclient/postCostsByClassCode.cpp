@@ -12,7 +12,6 @@
 
 #include <QSqlError>
 #include <QVariant>
-#include "errorReporter.h"
 
 postCostsByClassCode::postCostsByClassCode(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -107,9 +106,9 @@ void postCostsByClassCode::sPost()
 
   _classCode->bindValue(postPost);
   postPost.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Costs"),
-                                postPost, __FILE__, __LINE__))
+  if (postPost.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, postPost.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 

@@ -16,7 +16,6 @@
 //#include <QStatusBar>
 #include <parameter.h>
 #include "financialLayout.h"
-#include "errorReporter.h"
 
 /*
  *  Constructs a financialLayouts as a child of 'parent', with the
@@ -202,9 +201,9 @@ void financialLayouts::sCopy()
       }
       else
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Copy Error"),
-                             tr("%1: An error occurred copying financial layout "
-                                "information").arg(windowTitle()),__FILE__,__LINE__);
+        systemError(this, tr("A System Error occurred at %1::%2.")
+                          .arg(__FILE__)
+                          .arg(__LINE__) );
         return;
       }
     }

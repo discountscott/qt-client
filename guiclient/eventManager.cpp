@@ -35,7 +35,6 @@
 #include "todoItem.h"
 #include "incident.h"
 #include "task.h"
-#include "errorReporter.h"
 
 eventManager::eventManager(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -221,9 +220,9 @@ void eventManager::sViewSalesOrder()
   eventViewSalesOrder.exec();
   if (eventViewSalesOrder.first())
     salesOrder::viewSalesOrder(eventViewSalesOrder.value("coitem_cohead_id").toInt());
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving S/O Information"),
-                                eventViewSalesOrder, __FILE__, __LINE__))
+  else if (eventViewSalesOrder.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, eventViewSalesOrder.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -267,9 +266,9 @@ void eventManager::sPrintPackingList()
     newdlg.set(params);
     newdlg.exec();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Printing Packing List"),
-                                eventPrintPackingList, __FILE__, __LINE__))
+  else if (eventPrintPackingList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, eventPrintPackingList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -316,15 +315,13 @@ void eventManager::sRecallWo()
     int result = eventRecallWo.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Recalling Work Order"),
-                             storedProcErrorLookup("recallWo", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("recallWo", result), __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Recalling Work Order"),
-                                eventRecallWo, __FILE__, __LINE__))
+  else if (eventRecallWo.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, eventRecallWo.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -375,15 +372,13 @@ void eventManager::sDeleteWorkOrder()
       int result = eventDeleteWorkOrder.value("result").toInt();
       if (result < 0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Work Order"),
-                               storedProcErrorLookup("deleteWo", result),
-                               __FILE__, __LINE__);
-        return;
+	systemError(this, storedProcErrorLookup("deleteWo", result), __FILE__, __LINE__);
+	return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Work Order"),
-                                  eventDeleteWorkOrder, __FILE__, __LINE__))
+    else if (eventDeleteWorkOrder.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, eventDeleteWorkOrder.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -434,9 +429,9 @@ void eventManager::sAcknowledge()
   {
     eventAcknowledge.bindValue(":evntlog_id", ((XTreeWidgetItem*)(list[i]))->id());
     eventAcknowledge.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Updating Event Log"),
-                                  eventAcknowledge, __FILE__, __LINE__))
+    if (eventAcknowledge.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, eventAcknowledge.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -455,9 +450,9 @@ void eventManager::sDelete()
   {
     eventDelete.bindValue(":evntlog_id", ((XTreeWidgetItem*)(list[i]))->id());
     eventDelete.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Removing Event Log Entry"),
-                                  eventDelete, __FILE__, __LINE__))
+    if (eventDelete.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, eventDelete.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -477,9 +472,9 @@ void eventManager::sFillList()
     params.append("showAcknowledged");
   eventFillList = mql.toQuery(params);
   _event->populate(eventFillList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Event Log Information"),
-                                eventFillList, __FILE__, __LINE__))
+  if (eventFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, eventFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

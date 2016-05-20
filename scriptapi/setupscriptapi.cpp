@@ -11,7 +11,6 @@
 #include "addressclustersetup.h"
 #include "alarmssetup.h"
 #include "calendarTools.h"
-#include "char.h"
 #include "clineeditsetup.h"
 #include "commentssetup.h"
 #include "contactwidgetsetup.h"
@@ -24,7 +23,6 @@
 #include "glclustersetup.h"
 #include "include.h"
 #include "itemlineeditsetup.h"
-#include "jsconsole.h"
 #include "metasqlhighlighterproto.h"
 #include "orderlineeditsetup.h"
 #include "orreportproto.h"
@@ -33,14 +31,10 @@
 #include "parameterlistsetup.h"
 #include "parameterwidget.h"
 #include "projectlineeditsetup.h"
-#include "qabstractsocketproto.h"
 #include "qactionproto.h"
 #include "qapplicationproto.h"
 #include "qboxlayoutproto.h"
-#include "qbufferproto.h"
 #include "qbytearrayproto.h"
-#include "qcoreapplicationproto.h"
-#include "qcryptographichashproto.h"
 #include "qdialogsetup.h"
 #include "qdialogbuttonboxproto.h"
 #include "qdirproto.h"
@@ -63,8 +57,6 @@
 #include "qdomprocessinginstructionproto.h"
 #include "qdomtextproto.h"
 #include "qdoublevalidatorproto.h"
-#include "qhostaddressproto.h"
-#include "qhostinfoproto.h"
 #include "qintvalidatorproto.h"
 #include "qeventproto.h"
 #include "qfileproto.h"
@@ -75,45 +67,24 @@
 #include "qiconproto.h"
 #include "qiodeviceproto.h"
 #include "qitemdelegateproto.h"
-#include "qjsondocumentproto.h"
-#include "qjsonobjectproto.h"
-#include "qjsonvalueproto.h"
 #include "qlayoutitemproto.h"
 #include "qlayoutproto.h"
 #include "qmainwindowproto.h"
 #include "qmenuproto.h"
 #include "qmessageboxsetup.h"
-#include "qnetworkaccessmanagerproto.h"
-#include "qnetworkinterfaceproto.h"
 #include "qnetworkreplyproto.h"
 #include "qnetworkrequestproto.h"
-#include "qobjectproto.h"
 #include "qprinterproto.h"
 #include "qprocessproto.h"
 #include "qprocessenvironmentproto.h"
 #include "qpushbuttonproto.h"
-#include "qserialportproto.h"
-#include "qserialportinfoproto.h"
 #include "qsizepolicyproto.h"
 #include "qspaceritemproto.h"
 #include "qsqldatabaseproto.h"
-#include "qsqldriverproto.h"
 #include "qsqlerrorproto.h"
 #include "qsqlrecordproto.h"
-#include "qsslcertificateextensionproto.h"
-#include "qsslcertificateproto.h"
-#include "qsslcipherproto.h"
-#include "qsslconfigurationproto.h"
-#include "qsslellipticcurveproto.h"
-#include "qsslerrorproto.h"
-#include "qsslkeyproto.h"
-#include "qsslpresharedkeyauthenticatorproto.h"
-#include "qsslproto.h"
-#include "qsslsocketproto.h"
 #include "qstackedwidgetproto.h"
 #include "qtabwidgetproto.h"
-#include "qtcpserverproto.h"
-#include "qtcpsocketproto.h"
 #include "qtextdocumentproto.h"
 #include "qtexteditproto.h"
 #include "qtimerproto.h"
@@ -121,23 +92,10 @@
 #include "qtoolbuttonproto.h"
 #include "qtreewidgetitemproto.h"
 #include "qtsetup.h"
-#include "qudpsocketproto.h"
 #include "queryset.h"
 #include "qurlproto.h"
-#include "qurlqueryproto.h"
-#include "quuidproto.h"
 #include "qvalidatorproto.h"
-#include "qwebchannelproto.h"
-#include "qwebelementproto.h"
-#include "qwebelementcollectionproto.h"
-#include "qwebframeproto.h"
 #include "qwebpageproto.h"
-#include "qwebsecurityoriginproto.h"
-#include "qwebsettingsproto.h"
-#include "qwebsocketcorsauthenticatorproto.h"
-#include "qwebsocketproto.h"
-#include "qwebsocketprotocolproto.h"
-#include "qwebsocketserverproto.h"
 #include "qwebviewproto.h"
 #include "qwidgetproto.h"
 #include "ralineeditsetup.h"
@@ -149,7 +107,6 @@
 #include "usernamecluster.h"
 #include "vendorgroupsetup.h"
 #include "wcomboboxsetup.h"
-#include "webchanneltransport.h"
 #include "wocluster.h"
 #include "womatlclustersetup.h"
 #include "xcheckbox.h"
@@ -157,11 +114,11 @@
 #include "xdatawidgetmapperproto.h"
 #include "xdateeditsetup.h"
 #include "xdoccopysetter.h"
+#include "xnetworkaccessmanager.h"
 #include "xsqltablemodelproto.h"
 #include "xsqlqueryproto.h"
 #include "xtreewidget.h"
 #include "xvariantsetup.h"
-#include "xwebsync.h"
 
 /*! \defgroup scriptapi The xTuple ERP Scripting API
 
@@ -175,7 +132,6 @@ void setupScriptApi(QScriptEngine *engine)
   setupAddressCluster(engine);
   setupAlarms(engine);
   setupCLineEdit(engine);
-  setupchar(engine);
   setupCRMAcctLineEdit(engine);
   setupComments(engine);
   setupContactWidget(engine);
@@ -188,7 +144,6 @@ void setupScriptApi(QScriptEngine *engine)
   setupGLCluster(engine);
   setupInclude(engine);
   setupItemLineEdit(engine);
-  setupJSConsole(engine);
   setupMetaSQLHighlighterProto(engine);
   setupOrderLineEdit(engine);
   setupOrReportProto(engine);
@@ -198,14 +153,10 @@ void setupScriptApi(QScriptEngine *engine)
   setupParameterWidget(engine);
   setupPeriodListViewItem(engine);
   setupProjectLineEdit(engine);
-  setupQAbstractSocketProto(engine);
   setupQActionProto(engine);
   setupQApplicationProto(engine);
   setupQBoxLayoutProto(engine);
-  setupQBufferProto(engine);
   setupQByteArrayProto(engine);
-  setupQCoreApplicationProto(engine);
-  setupQCryptographicHashProto(engine);
   setupQDialog(engine);
   setupQDialogButtonBoxProto(engine);
   setupQDirProto(engine);
@@ -235,50 +186,28 @@ void setupScriptApi(QScriptEngine *engine)
   setupQFontProto(engine);
   setupQFormLayoutProto(engine);
   setupQGridLayoutProto(engine);
-  setupQHostAddressProto(engine);
-  setupQHostInfoProto(engine);
   setupQIconProto(engine);
   setupQIODeviceProto(engine);
   setupQItemDelegateProto(engine);
-  setupQJsonDocumentProto(engine);
-  setupQJsonObjectProto(engine);
-  setupQJsonValueProto(engine);
   setupQLayoutItemProto(engine);
   setupQLayoutProto(engine);
   setupQMainWindowProto(engine);
   setupQMenuProto(engine);
   setupQMessageBox(engine);
   setupQNetworkAccessManagerProto(engine);
-  setupQNetworkInterfaceProto(engine);
   setupQNetworkReplyProto(engine);
   setupQNetworkRequestProto(engine);
-  setupQObjectProto(engine);
   setupQPrinterProto(engine);
   setupQProcessProto(engine);
   setupQProcessEnvironmentProto(engine);
   setupQPushButtonProto(engine);
-  setupQSerialPortProto(engine);
-  setupQSerialPortInfoProto(engine);
   setupQSizePolicy(engine);
   setupQSpacerItem(engine);
   setupQSqlDatabaseProto(engine);
-  setupQSqlDriverProto(engine);
   setupQSqlErrorProto(engine);
   setupQSqlRecordProto(engine);
-  setupQSslCertificateExtensionProto(engine);
-  setupQSslCertificateProto(engine);
-  setupQSslCipherProto(engine);
-  setupQSslConfigurationProto(engine);
-  setupQSslEllipticCurveProto(engine);
-  setupQSslErrorProto(engine);
-  setupQSslKeyProto(engine);
-  setupQSslPreSharedKeyAuthenticatorProto(engine);
-  setupQSslProto(engine);
-  setupQSslSocketProto(engine);
   setupQStackedWidgetProto(engine);
   setupQTabWidgetProto(engine);
-  setupQTcpServerProto(engine);
-  setupQTcpSocketProto(engine);
   setupQTextDocumentProto(engine);
   setupQTextEditProto(engine);
   setupQTimerProto(engine);
@@ -286,23 +215,10 @@ void setupScriptApi(QScriptEngine *engine)
   setupQToolButtonProto(engine);
   setupQTreeWidgetItemProto(engine);
   setupQt(engine);
-  setupQUdpSocketProto(engine);
   setupQuerySet(engine);
   setupQUrlProto(engine);
-  setupQUrlQueryProto(engine);
-  setupQUuidProto(engine);
   setupQValidatorProto(engine);
-  setupQWebChannelProto(engine);
-  setupQWebElementProto(engine);
-  setupQWebElementCollectionProto(engine);
-  setupQWebFrameProto(engine);
   setupQWebPageProto(engine);
-  setupQWebSecurityOriginProto(engine);
-  setupQWebSettingsProto(engine);
-  setupQWebSocketCorsAuthenticatorProto(engine);
-  setupQWebSocketProto(engine);
-  setupQWebSocketProtocolProto(engine);
-  setupQWebSocketServerProto(engine);
   setupQWebViewProto(engine);
   setupQWidgetProto(engine);
   setupRaLineEdit(engine);
@@ -314,7 +230,6 @@ void setupScriptApi(QScriptEngine *engine)
   setupUsernameLineEdit(engine);
   setupVendorGroup(engine);
   setupWComboBox(engine);
-  setupWebChannelTransport(engine);
   setupWoCluster(engine);
   setupWomatlCluster(engine);
   setupXCheckBox(engine);
@@ -328,5 +243,4 @@ void setupScriptApi(QScriptEngine *engine)
   setupXTreeWidget(engine);
   setupXTreeWidgetItem(engine);
   setupXVariant(engine);
-  setupXWebSync(engine);
 }

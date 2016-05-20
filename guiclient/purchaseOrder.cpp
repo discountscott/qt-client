@@ -17,7 +17,6 @@
 
 #include <metasql.h>
 
-#include "storedProcErrorLookup.h"
 #include "errorReporter.h"
 #include "guiErrorCheck.h"
 #include "comment.h"
@@ -49,7 +48,6 @@ purchaseOrder::purchaseOrder(QWidget* parent, const char* name, Qt::WindowFlags 
   connect(_poitem,                   SIGNAL(populateMenu(QMenu*,QTreeWidgetItem*,int)), this,          SLOT(sPopulateMenu(QMenu*,QTreeWidgetItem*)));
   connect(_delete,                   SIGNAL(clicked()),                                 this,          SLOT(sDelete()));
   connect(_edit,                     SIGNAL(clicked()),                                 this,          SLOT(sEdit()));
-  connect(_freight,                  SIGNAL(valueChanged()),                            this,          SLOT(sCalculateTax()));
   connect(_freight,                  SIGNAL(valueChanged()),                            this,          SLOT(sCalculateTotals()));
   connect(_new,                      SIGNAL(clicked()),                                 this,          SLOT(sNew()));
   connect(_orderDate,                SIGNAL(newDate(QDate)),                            this,          SLOT(sHandleOrderDate()));
@@ -250,8 +248,9 @@ enum SetResponse purchaseOrder::set(const ParameterList &pParams)
         }
         else
         {
-          ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Purchase Order Information"),
-                               purchaseet, __FILE__, __LINE__);
+          systemError(this, tr("A System Error occurred at %1::%2.")
+                            .arg(__FILE__)
+                            .arg(__LINE__) );
           return UndefinedError;
         }
       }
@@ -325,8 +324,9 @@ enum SetResponse purchaseOrder::set(const ParameterList &pParams)
           purchaseet.exec();
           if (!purchaseet.first())
           {
-            ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Purchase Order Information"),
-                                 purchaseet, __FILE__, __LINE__);\
+            systemError(this, tr("A System Error occurred at %1::%2.")
+                        .arg(__FILE__)
+                        .arg(__LINE__) );
             return UndefinedError;
           }
         }
@@ -599,15 +599,15 @@ void purchaseOrder::createHeader()
     setPoheadid(purchasecreateHeader.value("pohead_id").toInt());
   else
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Creating Purchase Order Header"),
-                         purchasecreateHeader, __FILE__, __LINE__);
+    systemError(this, tr("A System Error occurred at %1::%2.")
+                      .arg(__FILE__)
+                      .arg(__LINE__) );
     return;
   }
 
   // need to set at least the _order date before the INSERT
   _comments->setId(_poheadid);
   _documents->setId(_poheadid);
-  _charass->setId(_poheadid);
   _orderDate->setDate(omfgThis->dbDate(), true);
   _status->setCurrentIndex(0);
   _vendor->setShowInactive(false);
@@ -632,8 +632,7 @@ void purchaseOrder::createHeader()
   purchasecreateHeader.bindValue(":pohead_curr_id", _poCurrency->id());
   purchasecreateHeader.exec();
   if (purchasecreateHeader.lastError().type() != QSqlError::NoError)
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Creating Purchase Order Header"),
-                       purchasecreateHeader, __FILE__, __LINE__);
+    systemError(this, purchasecreateHeader.lastError().databaseText(), __FILE__, __LINE__);
 
   // Populate Ship To contact and addresses for the Receiving Site
   sHandleShipTo();
@@ -735,6 +734,8 @@ void purchaseOrder::populate()
     _vendAddr->setCountry(po.value("pohead_vendcountry").toString());
         connect(_vendAddr, SIGNAL(changed()), _vendaddrCode, SLOT(clear()));
 
+    _shiptoName->setText(po.value("pohead_shiptoname").toString());
+
     _shiptoAddr->setId(po.value("pohead_shiptoaddress_id").toInt());
     _shiptoAddr->setLine1(po.value("pohead_shiptoaddress1").toString());
     _shiptoAddr->setLine2(po.value("pohead_shiptoaddress2").toString());
@@ -744,9 +745,6 @@ void purchaseOrder::populate()
     _shiptoAddr->setPostalCode(po.value("pohead_shiptozipcode").toString());
     _shiptoAddr->setCountry(po.value("pohead_shiptocountry").toString());
 
-    // must be after _shiptoAddr
-    _shiptoName->setText(po.value("pohead_shiptoname").toString());
-    
     _comments->setId(_poheadid);
     _documents->setId(_poheadid);
     _charass->setId(_poheadid);
@@ -806,32 +804,8 @@ void purchaseOrder::sSave()
   {
     if ((purchaseSave.value("pohead_status") == "O") && (_status->currentIndex() == 0))
     {
-      if (!_privileges->check("UnreleasePurchaseOrders"))
-        errors << GuiErrorCheck(true, _status,
-                                tr( "You do not have the privilege to set the status back to 'Unreleased'." ));
-      else
-      {
-        XSqlQuery unRelease;
-        unRelease.prepare("SELECT unreleasePurchaseOrder(:pohead_id) AS result;");
-        unRelease.bindValue(":pohead_id", _poheadid);
-        unRelease.exec();
-        if (unRelease.first())
-        {
-          int result = unRelease.value("result").toInt();
-          if (result < 0)
-          {
-            ErrorReporter::error(QtCriticalMsg, this, tr("Error Unreleasing Purchase Order"),
-                                   storedProcErrorLookup("unreleasePurchaseOrder", result),
-                                   __FILE__, __LINE__);
-            return;
-          }
-        }
-        else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Purchase Order Information"),
-                                      unRelease, __FILE__, __LINE__))
-        {
-          return;
-        }
-      }
+      errors << GuiErrorCheck(true, _status,
+                              tr( "This Purchase Order has been released. You may not set its Status back to 'Unreleased'." ));
     }
   }
 
@@ -1083,9 +1057,9 @@ void purchaseOrder::sDelete()
                "WHERE (poitem_id=:poitem_id);" );
     purchaseDelete.bindValue(":poitem_id", _poitem->id());
     purchaseDelete.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Purchase Order"),
-                                  purchaseDelete, __FILE__, __LINE__))
+    if (purchaseDelete.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, purchaseDelete.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -1102,9 +1076,9 @@ void purchaseOrder::sDelete()
                "WHERE (poitem_id=:poitem_id);" );
     purchaseDelete.bindValue(":poitem_id", _poitem->id());
     purchaseDelete.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Purchase Order"),
-                                  purchaseDelete, __FILE__, __LINE__))
+    if (purchaseDelete.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, purchaseDelete.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -1214,7 +1188,7 @@ void purchaseOrder::sHandleVendor(int pVendid)
                "       cntct_id, cntct_honorific, cntct_first_name,"
                "       cntct_middle, cntct_last_name, cntct_suffix,"
                "       cntct_phone, cntct_title, cntct_fax, cntct_email,"
-               "       vend_terms_id, vend_curr_id, vend_pocomments,"
+               "       vend_terms_id, vend_curr_id,"
                "       vend_fobsource, vend_fob, vend_shipvia,"
                "       vend_name,"
                "       COALESCE(vend_addr_id, -1) AS vendaddrid,"
@@ -1234,7 +1208,6 @@ void purchaseOrder::sHandleVendor(int pVendid)
       _poCurrency->setId(vq.value("vend_curr_id").toInt());
       _terms->setId(vq.value("vend_terms_id").toInt());
       _shipVia->setText(vq.value("vend_shipvia"));
-      _notes->setText(vq.value("vend_pocomments").toString());
 
       if (vq.value("vend_fobsource").toString() == "V")
       {
@@ -1313,9 +1286,9 @@ void purchaseOrder::sFillList()
 
   purchaseFillList = mql.toQuery(params);
   _poitem->populate(purchaseFillList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Purchase Order Information"),
-                                purchaseFillList, __FILE__, __LINE__))
+  if (purchaseFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, purchaseFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -1402,8 +1375,7 @@ void purchaseOrder::sHandleOrderNumber()
       purchaseHandleOrderNumber.bindValue(":orderNumber", _orderNumber->text().toInt());
       purchaseHandleOrderNumber.exec();
       if (purchaseHandleOrderNumber.lastError().type() != QSqlError::NoError)
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Purchase Order Information"),
-                               purchaseHandleOrderNumber, __FILE__, __LINE__);
+        systemError(this, purchaseHandleOrderNumber.lastError().databaseText(), __FILE__, __LINE__);
 
       if (! _lock.release())
         ErrorReporter::error(QtCriticalMsg, this, tr("Locking Error"),
@@ -1427,8 +1399,7 @@ void purchaseOrder::sHandleOrderNumber()
     purchaseHandleOrderNumber.bindValue(":pohead_number", _orderNumber->text());
     purchaseHandleOrderNumber.exec();
     if (purchaseHandleOrderNumber.lastError().type() != QSqlError::NoError)
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Purchase Order Information"),
-                         purchaseHandleOrderNumber, __FILE__, __LINE__);
+      systemError(this, purchaseHandleOrderNumber.lastError().databaseText(), __FILE__, __LINE__);
   }
 }
 
@@ -1441,9 +1412,9 @@ void purchaseOrder::populateOrderNumber()
     _orderNumber->setText(on.value("ponumber"));
     _NumberGen = on.value("ponumber").toInt();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Purchase Order Information"),
-                                on, __FILE__, __LINE__))
+  else if (on.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, on.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -1477,8 +1448,7 @@ void purchaseOrder::closeEvent(QCloseEvent *pEvent)
     purchasecloseEvent.bindValue(":pohead_id", _poheadid);
     purchasecloseEvent.exec();
     if (purchasecloseEvent.lastError().type() != QSqlError::NoError)
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Purchase Order"),
-                         purchasecloseEvent, __FILE__, __LINE__);
+      systemError(this, purchasecloseEvent.lastError().databaseText(), __FILE__, __LINE__);
 
     sReleaseNumber();
   }
@@ -1499,8 +1469,7 @@ void purchaseOrder::closeEvent(QCloseEvent *pEvent)
     purchasecloseEvent.bindValue(":pohead_id", _poheadid);
     purchasecloseEvent.exec();
     if (purchasecloseEvent.lastError().type() != QSqlError::NoError)
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Purchase Order"),
-                         purchasecloseEvent, __FILE__, __LINE__);
+      systemError(this, purchasecloseEvent.lastError().databaseText(), __FILE__, __LINE__);
   }
 
   // TODO: if sQeSave == false then find a way to return control to the user
@@ -1533,8 +1502,7 @@ void purchaseOrder::sReleaseNumber()
     purchaseReleaseNumber.bindValue(":number", _NumberGen);
     purchaseReleaseNumber.exec();
     if (purchaseReleaseNumber.lastError().type() != QSqlError::NoError)
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Releasing Purchase Order"),
-                         purchaseReleaseNumber, __FILE__, __LINE__);
+      systemError(this, purchaseReleaseNumber.lastError().databaseText(), __FILE__, __LINE__);
     _NumberGen = -1;
   }
 }
@@ -1556,9 +1524,7 @@ void purchaseOrder::sQEDelete()
 {
   if (! _qeitem->removeRow(_qeitemView->currentIndex().row()))
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                         tr("%1: Removing row from view failed. ")
-                         .arg(windowTitle()),__FILE__,__LINE__);\
+    systemError(this, tr("Removing row from view failed"), __FILE__, __LINE__);
     return;
   }
 }
@@ -1620,9 +1586,9 @@ void purchaseOrder::sTaxZoneChanged()
     taxq.bindValue(":pohead_id", _poheadid);
     taxq.bindValue(":freight", _freight->localValue());
     taxq.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Updating Purchase Order Tax Zone Information"),
-                                  taxq, __FILE__, __LINE__))
+    if (taxq.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, taxq.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
     sCalculateTax();
@@ -1630,12 +1596,7 @@ void purchaseOrder::sTaxZoneChanged()
 }
 
 void purchaseOrder::sCalculateTax()
-{ 
-  if (!_vendor->isValid())
-    return; 
-  if (!saveDetail())
-    return;
-
+{  
   XSqlQuery taxq;
   taxq.prepare( "SELECT SUM(tax) AS tax "
                 "FROM ("
@@ -1647,9 +1608,11 @@ void purchaseOrder::sCalculateTax()
   taxq.exec();
   if (taxq.first())
     _tax->setLocalValue(taxq.value("tax").toDouble());
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Calculating P/O Tax"),
-                                    taxq, __FILE__, __LINE__))
-        return;
+  else if (taxq.lastError().type() != QSqlError::NoError)
+  {
+    systemError(this, taxq.lastError().databaseText(), __FILE__, __LINE__);
+    return;
+  }              
 }
 
 void purchaseOrder::sTaxDetail()
@@ -1671,7 +1634,7 @@ void purchaseOrder::sTaxDetail()
 
 bool purchaseOrder::saveDetail()
 {
-  if (_mode == cView || _poheadid == -1)
+  if (_mode == cView)
     return true;
 
   QList<GuiErrorCheck> errors;
@@ -1679,15 +1642,13 @@ bool purchaseOrder::saveDetail()
                           tr("You may not save this Purchase Order until you have selected a Tax Zone." ))
          << GuiErrorCheck(!_orderDate->isValid(), _orderDate,
                           tr("You may not save this Purchase Order until you have entered a valid Purchase Order Date."))
-         << GuiErrorCheck(!_vendor->isValid(), _vendor,
-                          tr("You may not save this Purchase Order until you have selected a valid Vendor."))
   ;
 
   if (GuiErrorCheck::reportErrors(this, tr("Cannot Save Purchase Order"), errors))
     return false;
 
-  XSqlQuery updt;
-  updt.prepare( "UPDATE pohead "
+  XSqlQuery taxq;
+  taxq.prepare( "UPDATE pohead "
                 "SET pohead_warehous_id=:pohead_warehous_id,"
                 "    pohead_vend_id=:pohead_vend_id,"
                 "    pohead_number=:pohead_number,"
@@ -1697,22 +1658,21 @@ bool purchaseOrder::saveDetail()
                 "    pohead_freight = :pohead_freight "
                 "WHERE (pohead_id=:pohead_id);" );
   if (_warehouse->isValid())
-    updt.bindValue(":pohead_warehous_id", _warehouse->id());
-  updt.bindValue(":pohead_vend_id", _vendor->id());
-  updt.bindValue(":pohead_number", _orderNumber->text());
-  updt.bindValue(":pohead_id", _poheadid);
+    taxq.bindValue(":pohead_warehous_id", _warehouse->id());
+  taxq.bindValue(":pohead_vend_id", _vendor->id());
+  taxq.bindValue(":pohead_number", _orderNumber->text());
+  taxq.bindValue(":pohead_id", _poheadid);
   if (_taxZone->isValid())
-    updt.bindValue(":pohead_taxzone_id", _taxZone->id());
-  updt.bindValue(":pohead_curr_id", _poCurrency->id());
-  updt.bindValue(":pohead_orderdate", _orderDate->date());
-  updt.bindValue(":pohead_freight", _freight->localValue());
-  updt.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("P/O Save Detail"),
-                                    updt, __FILE__, __LINE__))
+    taxq.bindValue(":pohead_taxzone_id", _taxZone->id());
+  taxq.bindValue(":pohead_curr_id", _poCurrency->id());
+  taxq.bindValue(":pohead_orderdate", _orderDate->date());
+  taxq.bindValue(":pohead_freight", _freight->localValue());
+  taxq.exec();
+  if (taxq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, taxq.lastError().databaseText(), __FILE__, __LINE__);
     return false;
   }
-
   return true;
 }
 
@@ -1849,17 +1809,14 @@ void purchaseOrder::sHandleShipTo()
 
 void purchaseOrder::sHandleShipToName()
 {
-  if (!_dropShip->isChecked())
+  XSqlQuery purchaseHandleShipTo;
+  purchaseHandleShipTo.prepare( "SELECT COALESCE(shipto_name,crmacct_name) AS shiptoname "
+	  "FROM address left outer join shiptoinfo on (shipto_addr_id=addr_id) "
+                               "WHERE (addr_id=:addr_id);" );
+  purchaseHandleShipTo.bindValue(":addr_id", _shiptoAddr->id());
+  purchaseHandleShipTo.exec();
+  if (purchaseHandleShipTo.first())
   {
-    XSqlQuery purchaseHandleShipTo;
-    purchaseHandleShipTo.prepare("SELECT * "
-                                 "FROM address "
-                                 "WHERE (addr_id=:addr_id);" );
-    purchaseHandleShipTo.bindValue(":addr_id", _shiptoAddr->id());
-    purchaseHandleShipTo.exec();
-    if (purchaseHandleShipTo.first())
-    {
-      _shiptoName->setText(purchaseHandleShipTo.value("crmacct_name").toString());
-    }
+    _shiptoName->setText(purchaseHandleShipTo.value("shiptoname").toString());
   }
 }

@@ -14,7 +14,6 @@
 #include <QVariant>
 
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 createCycleCountTags::createCycleCountTags(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -135,15 +134,13 @@ void createCycleCountTags::sCreate()
     int result = createCreate.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Creating Cycle Count Tags"),
-                               storedProcErrorLookup(fname, result),
-                               __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup(fname, result), __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Creating Cycle Count Tags"),
-                                createCreate, __FILE__, __LINE__))
+  else if (createCreate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, createCreate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -163,9 +160,9 @@ void createCycleCountTags::sPopulateLocations()
   createPopulateLocations.bindValue(":warehous_id", _warehouse->id());
   createPopulateLocations.exec();
   _location->populate(createPopulateLocations);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Cycle Count Tag Information"),
-                                createPopulateLocations, __FILE__, __LINE__))
+  if (createPopulateLocations.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, createPopulateLocations.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

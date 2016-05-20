@@ -20,7 +20,6 @@
 #include <openreports.h>
 
 #include "employee.h"
-#include "errorReporter.h"
 
 #define DEBUG   false
 
@@ -47,9 +46,9 @@ void searchForEmp::setVisible(bool visible)
 
   else if (! userHasPriv())
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                         tr("%1: Insufficient Privileges To View This Window")
-                         .arg(windowTitle()),__FILE__,__LINE__);
+    systemError(this,
+		tr("You do not have sufficient privilege to view this window"),
+		__FILE__, __LINE__);
     close();
   }
   else
@@ -270,9 +269,9 @@ void searchForEmp::sFillList()
     return;
   searchFillList = mql.toQuery(params);
   _emp->populate(searchFillList, true);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Employee Information"),
-                                searchFillList, __FILE__, __LINE__))
+  if (searchFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, searchFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

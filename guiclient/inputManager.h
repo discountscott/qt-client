@@ -15,7 +15,6 @@
 #include <QEvent>
 
 class InputManagerPrivate;
-class QScriptEngine;
 
 #define	cBCWorkOrder              0x00000010
 #define	cBCWorkOrderMaterial      0x00000020
@@ -47,21 +46,51 @@ class InputManager : public QObject
     Q_INVOKABLE void notify(int, QObject *, QObject *, const QString &);
     Q_INVOKABLE QString slotName(const QString &);
 
-    void scriptAPI(QScriptEngine *engine, QString globalName);
-
   public slots:
     void sRemove(QObject *);
 
   signals:
-    void gotBarCode(int type, int id);
+    void readWorkOrder(int);
+    void readWorkOrderMaterial(int);
+    void readWorkOrderOperation(int);
+    void readPurchaseOrder(int);
+    void readPurchaseOrderLineItem(int);
+    void readSalesOrder(int);
+    void readSalesOrderLineItem(int);
+    void readTransferOrder(int);
+    void readTransferOrderLineItem(int);
+    void readItemSite(int);
+    void readItem(int);
+    void readCountTag(int);
+    void readLocation(int);
+    void readLocationIssue(int);
+    void readLocationContents(int);
+    void readLotSerialNumber(QString);
+    void readUser(int);
 
   protected:
     bool eventFilter(QObject *, QEvent *);
 
   private:
-    friend class InputManagerPrivate;
     InputManagerPrivate *_private;
 
+    void dispatchWorkOrder();
+    void dispatchWorkOrderOperation();
+    void dispatchPurchaseOrder();
+    void dispatchPurchaseOrderLineItem();
+    void dispatchSalesOrder();
+    void dispatchSalesOrderLineItem();
+    void dispatchTransferOrder();
+    void dispatchTransferOrderLineItem();
+    void dispatchItemSite();
+    void dispatchItem();
+    void dispatchUPCCode();
+    void dispatchCountTag();
+    void dispatchLocation();
+    void dispatchLocationIssue();
+    void dispatchLocationContents();
+    void dispatchLotSerialNumber();
+    void dispatchUser();
 };
 
 #endif

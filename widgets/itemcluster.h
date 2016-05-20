@@ -54,7 +54,6 @@ private:
     bool _useQuery;
     QString _sql;
     QStringList _extraClauses;
-    void showEvent(QShowEvent *);
 };
 
 class XTUPLEWIDGETS_EXPORT itemSearch : public VirtualSearch
@@ -272,7 +271,7 @@ class XTUPLEWIDGETS_EXPORT ItemCluster : public VirtualCluster
   public slots:
     QItemDelegate *itemDelegate() { return static_cast<ItemLineEdit*>(_number)->itemDelegate(); }
     void setDescriptionVisible(const bool p);
-    void setId(const int pId, const QString& = QString::null);
+    void setId(const int pId);
     void setItemNumber(QString);
     void setItemsiteid(int);
 
@@ -289,7 +288,7 @@ class XTUPLEWIDGETS_EXPORT ItemCluster : public VirtualCluster
     void fractional(bool);
 
   protected:
-    void addNumberWidget(VirtualClusterLineEdit* pNumberWidget);
+    void addNumberWidget(ItemLineEdit* pNumberWidget);
 
   private:
     QLabel       *_uom;

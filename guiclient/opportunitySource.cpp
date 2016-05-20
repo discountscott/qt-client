@@ -13,8 +13,6 @@
 #include <QVariant>
 #include <QMessageBox>
 
-#include "errorReporter.h"
-
 /*
  *  Constructs a opportunitySource as a child of 'parent', with the
  *  name 'name' and widget flags set to 'f'.
@@ -94,7 +92,6 @@ void opportunitySource::sCheck()
 {
   XSqlQuery opportunityCheck;
   _name->setText(_name->text().trimmed());
-
   if ((_mode == cNew) && (_name->text().length() != 0))
   {
     opportunityCheck.prepare( "SELECT opsource_id "
@@ -109,23 +106,6 @@ void opportunitySource::sCheck()
       populate();
 
       _name->setEnabled(false);
-    }
-  }
-  if ((_mode == cEdit) && (_name->text().length() != 0))
-  {
-    opportunityCheck.prepare( "SELECT opsource_id "
-               "FROM opsource "
-               "WHERE (UPPER(opsource_name)=UPPER(:opsource_name) "
-               " AND (opsource_id <> :opsource_id));" );
-    opportunityCheck.bindValue(":opsource_name", _name->text());
-    opportunityCheck.bindValue(":opsource_id", _opsourceid);
-    opportunityCheck.exec();
-    if (opportunityCheck.first())
-    {
-      QMessageBox::information( this, tr("Invalid Name"),
-                              tr("An Opportunity Source with this name already exists.") );
-      _name->setText("");
-      _name->setFocus();
     }
   }
 }
@@ -149,8 +129,9 @@ void opportunitySource::sSave()
       _opsourceid = opportunitySave.value("opsource_id").toInt();
     else
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Opportunity Source"),
-                           opportunitySave, __FILE__, __LINE__);
+      systemError(this, tr("A System Error occurred at %1::%2.")
+                        .arg(__FILE__)
+                        .arg(__LINE__) );
       return;
     }
 

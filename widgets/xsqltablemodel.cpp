@@ -217,9 +217,10 @@ void XSqlTableModel::setColumnRole(int column, int role, const QVariant value)
   applyColumnRole(column, role, value);
 }
 
-void XSqlTableModel::setTable(const QString &tableName)
+void XSqlTableModel::setTable(const QString &tableName, int keyColumns)
 {
   QSqlRelationalTableModel::setTable(tableName);
+  setKeys(keyColumns);
 }
 
 void XSqlTableModel::setKeys(int keyColumns)

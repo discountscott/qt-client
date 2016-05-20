@@ -19,7 +19,6 @@
 #include <openreports.h>
 
 #include "mqlutil.h"
-#include "errorReporter.h"
 
 printPackingListBatchByShipvia::printPackingListBatchByShipvia(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -80,9 +79,9 @@ void printPackingListBatchByShipvia::sPrint()
     params.append("shipvia", _shipvia->currentText());
   MetaSQLQuery packm = mqlLoad("packingListBatchByShipVia", "print");
   packq = packm.toQuery(params);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Printing Packing List Batch"),
-                                packq, __FILE__, __LINE__))
+  if (packq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, packq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -90,9 +89,7 @@ void printPackingListBatchByShipvia::sPrint()
   if (orReport::beginMultiPrint(&printer, userCanceled) == false)
   {
     if(!userCanceled)
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                         tr("%1: Could not initialize printing system "
-                            "for multiple reports. ").arg(windowTitle()),__FILE__,__LINE__);
+      systemError(this, tr("Could not initialize printing system for multiple reports."));
     return;
   }
   while (packq.next())
@@ -149,8 +146,7 @@ void printPackingListBatchByShipvia::sPrint()
     prtd = mql.toQuery(params);
     if (prtd.lastError().type() != QSqlError::NoError)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Printing Packing List Batch"),
-                           prtd, __FILE__, __LINE__);
+      systemError(this, prtd.lastError().databaseText(), __FILE__, __LINE__);
       orReport::endMultiPrint(&printer);
       return;
     }
@@ -172,6 +168,5 @@ void printPackingListBatchByShipvia::sPopulateShipVia()
   _shipvia->populate(printPopulateShipVia);
 
   if (printPopulateShipVia.lastError().type() != QSqlError::NoError)
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Packing List Batch Information"),
-                       printPopulateShipVia, __FILE__, __LINE__);
+    systemError(this, printPopulateShipVia.lastError().databaseText(), __FILE__, __LINE__);
 }

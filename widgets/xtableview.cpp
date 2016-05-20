@@ -432,14 +432,9 @@ void XTableView::setForegroundColor(int row, int col, QString color)
   _model->setData(_model->index(row,col), namedColor(color), Qt::ForegroundRole);
 }
 
-void XTableView::setModel(QAbstractItemModel * model)
+void XTableView::setModel(XSqlTableModel * model)
 {
-  XSqlTableModel *matchType = qobject_cast<XSqlTableModel *>(model);
-
-  if(matchType == 0)
-    return;
-
-  QTableView::setModel(matchType);
+  QTableView::setModel(model);
 
   for (int i = 0; i < QTableView::model()->columnCount(); ++i)
   {
@@ -541,7 +536,7 @@ void XTableView::setModel(QAbstractItemModel * model)
       }
     }
   }
-  emit newModel(matchType);
+  emit newModel(model);
 }
 
 void XTableView::setRowForegroundColor(int row, QString color)
@@ -560,8 +555,7 @@ void XTableView::setTable()
     QString tablename=_tableName;
     if (!_schemaName.isEmpty())
       tablename = _schemaName + "." + tablename;
-    _model->setTable(tablename);
-    _model->setKeys(_keyColumns);
+    _model->setTable(tablename,_keyColumns);
     
     setModel(_model);
     setItemDelegate(new XItemDelegate(this));

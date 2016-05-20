@@ -16,10 +16,6 @@
 #include <QtScript>
 
 Q_DECLARE_METATYPE(QByteArray*)
-Q_DECLARE_METATYPE(QByteArray)
-#if QT_VERSION >= 0x050000
-Q_DECLARE_METATYPE(enum QByteArray::Base64Option)
-#endif
 
 void setupQByteArrayProto(QScriptEngine *engine);
 QScriptValue constructQByteArray(QScriptContext *context, QScriptEngine *engine);
@@ -30,8 +26,8 @@ class QByteArrayProto : public QObject, public QScriptable
 
   public:
     QByteArrayProto(QObject *parent);
-    virtual ~QByteArrayProto();
 
+    /*
     Q_INVOKABLE QByteArray &append(const QByteArray &ba);
     Q_INVOKABLE QByteArray &append(const QString &str);
     Q_INVOKABLE QByteArray &append(const char *str);
@@ -133,6 +129,7 @@ class QByteArrayProto : public QObject, public QScriptable
     Q_INVOKABLE QByteArray toUpper() const;
     Q_INVOKABLE QByteArray trimmed() const;
     Q_INVOKABLE void truncate(int pos);
+    */
 
     Q_INVOKABLE QString toString() const;
 

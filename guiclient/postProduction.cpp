@@ -19,7 +19,6 @@
 #include "inputManager.h"
 #include "scrapWoMaterialFromWIP.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 #define DEBUG false
 
@@ -196,9 +195,9 @@ bool postProduction::okToPost()
                              "associated with.") );
     return false;
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Production),
-                                       type, __FILE__, __LINE__))
+  else if (type.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, type.lastError().databaseText(), __FILE__, __LINE__);
     return false;
   }
 */
@@ -294,39 +293,20 @@ QString postProduction::handleIssueToParentAfterPost(int itemlocSeries)
 {
   QString result = QString::null;
   XSqlQuery issueq;
-  
-  // Find invhist_id.  May not be found if control method is 'None'
-  int invhistid = -1;
-  issueq.prepare("SELECT invhist_id "
-                 "FROM invhist "
-                 "WHERE (invhist_series=:itemlocseries)"
-                 "  AND (invhist_transtype='RM');");
-  issueq.bindValue(":itemlocseries", itemlocSeries);
-  issueq.exec();
-  if (issueq.first())
-  {
-    invhistid = issueq.value("invhist_id").toInt();
-  }
-  else if (issueq.lastError().type() != QSqlError::NoError)
-    result = issueq.lastError().databaseText();
 
   // If this is a child W/O and the originating womatl
   // is auto issue then issue this receipt to the parent W/O
-  issueq.prepare("SELECT issueWoMaterial(womatl_id,"
-                 "       roundQty(item_fractional, itemuomtouom(itemsite_item_id, NULL, womatl_uom_id, :qty)),"
-                 "       :itemlocseries, :date, :invhist_id ) AS result "
-                 "FROM wo, womatl, itemsite, item "
+  issueq.prepare("SELECT issueWoMaterial(womatl_id, :qty,"
+                 "       :itemlocseries, NOW(), invhist_id ) AS result "
+                 "FROM wo, womatl, invhist "
                  "WHERE (wo_id=:wo_id)"
                  "  AND (womatl_id=wo_womatl_id)"
                  "  AND (womatl_issuewo)"
-                 "  AND (itemsite_id=womatl_itemsite_id)"
-                 "  AND (item_id=itemsite_item_id);");
+                 "  AND (invhist_series=:itemlocseries)"
+                 "  AND (invhist_transtype='RM');");
   issueq.bindValue(":itemlocseries", itemlocSeries);
   issueq.bindValue(":wo_id", _wo->id());
   issueq.bindValue(":qty", _qty->toDouble());
-  issueq.bindValue(":date",  _transDate->date());
-  if (invhistid > 0)
-    issueq.bindValue(":invhist_id", invhistid);
   issueq.exec();
   if (issueq.first())
   {
@@ -346,22 +326,19 @@ QString postProduction::handleIssueToParentAfterPost(int itemlocSeries)
 
   // If this is a W/O for a Job Cost item and the parent is a S/O
   // then issue this receipt to the S/O
-  issueq.prepare("SELECT issueToShipping('SO', coitem_id,"
-                 "       roundQty(item_fractional, itemuomtouom(itemsite_item_id, NULL, coitem_qty_uom_id, :qty)),"
-                 "       :itemlocseries, :date, :invhist_id) AS result "
-                 "FROM wo, itemsite, item, coitem "
+  issueq.prepare("SELECT issueToShipping('SO', coitem_id, :qty,"
+                 "       :itemlocseries, NOW(), invhist_id) AS result "
+                 "FROM wo, itemsite, coitem, invhist "
                  "WHERE (wo_id=:wo_id)"
                  "  AND (wo_ordtype='S')"
                  "  AND (itemsite_id=wo_itemsite_id)"
                  "  AND (itemsite_costmethod='J')"
-                 "  AND (item_id=itemsite_item_id)"
-                 "  AND (coitem_id=wo_ordid);");
+                 "  AND (coitem_id=wo_ordid)"
+                 "  AND (invhist_series=:itemlocseries)"
+                 "  AND (invhist_transtype='RM');");
   issueq.bindValue(":itemlocseries", itemlocSeries);
   issueq.bindValue(":wo_id", _wo->id());
   issueq.bindValue(":qty", _qty->toDouble());
-  issueq.bindValue(":date",  _transDate->date());
-  if (invhistid > 0)
-    issueq.bindValue(":invhist_id", invhistid);
   issueq.exec();
   if (issueq.first())
   {
@@ -423,9 +400,8 @@ void postProduction::sPost()
     if (itemlocSeries < 0)
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Production"),
-                             storedProcErrorLookup("postProduction", itemlocSeries),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("postProduction", itemlocSeries),
+                  __FILE__, __LINE__);
       return;
     }
 
@@ -433,10 +409,7 @@ void postProduction::sPost()
     if (! errmsg.isEmpty())
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                           tr("%1: %2")
-                           .arg(windowTitle())
-                           .arg(errmsg),__FILE__,__LINE__);
+      systemError(this, errmsg, __FILE__, __LINE__);
       return;
     }
 
@@ -452,10 +425,7 @@ void postProduction::sPost()
     if (! errmsg.isEmpty())
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                           tr("%1: %2")
-                           .arg(windowTitle())
-                           .arg(errmsg),__FILE__,__LINE__);
+      systemError(this, errmsg, __FILE__, __LINE__);
       return;
     }
 
@@ -463,10 +433,7 @@ void postProduction::sPost()
     if (! errmsg.isEmpty())
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                           tr("%1: %2")
-                           .arg(windowTitle())
-                           .arg(errmsg),__FILE__,__LINE__);
+      systemError(this, errmsg, __FILE__, __LINE__);
       return;
     }
 
@@ -474,9 +441,6 @@ void postProduction::sPost()
 
     omfgThis->sWorkOrdersUpdated(_wo->id(), true);
 
-    if (_scrap->isChecked())
-      sScrap();
-    
     if (_closeWo->isChecked())
     {
       ParameterList params;
@@ -491,10 +455,12 @@ void postProduction::sPost()
   else if (postPost.lastError().type() != QSqlError::NoError)
   {
     rollback.exec();
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Production"),
-                         postPost, __FILE__, __LINE__);
+    systemError(this, postPost.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
+
+  if (_scrap->isChecked())
+    sScrap();
 
   if (_captive)
     done(itemlocSeries);

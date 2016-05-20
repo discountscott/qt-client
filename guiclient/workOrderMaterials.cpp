@@ -120,23 +120,23 @@ enum SetResponse workOrderMaterials::set(const ParameterList &pParams)
 void workOrderMaterials::sPopulateMenu(QMenu *pMenu, QTreeWidgetItem *)
 {
   double qtyiss = _womatl->rawValue("womatl_qtyiss").toDouble();
-  //QAction *menuItem;
+  QAction *menuItem;
 
-  (void)pMenu->addAction(tr("Edit..."), this, SLOT(sEdit()));
-  (void)pMenu->addAction(tr("View..."), this, SLOT(sView()));
+  menuItem = pMenu->addAction(tr("Edit..."), this, SLOT(sEdit()));
+  menuItem = pMenu->addAction(tr("View..."), this, SLOT(sView()));
   
   if (qtyiss == 0.0)
-    (void)pMenu->addAction(tr("Delete..."), this, SLOT(sDelete()));
+    menuItem = pMenu->addAction(tr("Delete..."), this, SLOT(sDelete()));
   
   pMenu->addSeparator();
   
-  (void)pMenu->addAction(tr("View Availability..."), this, SLOT(sViewAvailability()));
+  menuItem = pMenu->addAction(tr("View Availability..."), this, SLOT(sViewAvailability()));
   
   pMenu->addSeparator();
   
-  (void)pMenu->addAction(tr("View Item-Defined Subsitute Availability..."), this, SLOT(sViewSubstituteAvailability()));
+  menuItem = pMenu->addAction(tr("View Item-Defined Subsitute Availability..."), this, SLOT(sViewSubstituteAvailability()));
   if (qtyiss == 0.0)
-    (void)pMenu->addAction(tr("Substitute..."), this, SLOT(sSubstitute()));
+    menuItem = pMenu->addAction(tr("Substitute..."), this, SLOT(sSubstitute()));
 }
 
 void workOrderMaterials::sNew()

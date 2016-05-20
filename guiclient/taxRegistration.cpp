@@ -13,7 +13,6 @@
 #include <QMessageBox>
 #include <QSqlError>
 #include <QVariant>
-#include "errorReporter.h"
 
 taxRegistration::taxRegistration(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
   : XDialog(parent, name, modal, fl)
@@ -47,7 +46,7 @@ void taxRegistration::languageChange()
   retranslateUi(this);
 }
 
-enum SetResponse taxRegistration::set(const ParameterList& pParams)
+enum SetResponse taxRegistration::set(const ParameterList pParams)
 {
   XSqlQuery taxet;
   XDialog::set(pParams);
@@ -81,9 +80,9 @@ enum SetResponse taxRegistration::set(const ParameterList& pParams)
 		{
           _taxregid = taxet.value("_taxreg_id").toInt();
 		}
-      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Tax Registration Information"),
-                                    taxet, __FILE__, __LINE__))
+      else if (taxet.lastError().type() != QSqlError::NoError)
       {
+        systemError(this, taxet.lastError().databaseText(), __FILE__, __LINE__);
         return UndefinedError;
       }
     }
@@ -189,9 +188,9 @@ void taxRegistration::sSave()
   taxSave.bindValue(":taxreg_notes", _notes->toPlainText());
 	
   taxSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Tax Registration Information"),
-                                taxSave, __FILE__, __LINE__))
+  if (taxSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, taxSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   accept();
@@ -218,9 +217,9 @@ void taxRegistration::sPopulate()
 	if (handleReltype() < 0)
       return;
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Tax Registration Information"),
-                                taxPopulate, __FILE__, __LINE__))
+  else if (taxPopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, taxPopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

@@ -19,7 +19,6 @@
 #include <openreports.h>
 
 #include "honorific.h"
-#include "errorReporter.h"
 
 /*
    honorifics is internal name, titles is external name.  names
@@ -76,9 +75,9 @@ void honorifics::sFillList()
              "ORDER BY hnfc_code;" );
   honorificsFillList.exec();
   _honorifics->populate(honorificsFillList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Title Information"),
-                                honorificsFillList, __FILE__, __LINE__))
+  if (honorificsFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, honorificsFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -90,9 +89,9 @@ void honorifics::sDelete()
              "WHERE (hnfc_id=:hnfc_id);" );
   honorificsDelete.bindValue(":hnfc_id", _honorifics->id());
   honorificsDelete.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Title"),
-                                honorificsDelete, __FILE__, __LINE__))
+  if (honorificsDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, honorificsDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 

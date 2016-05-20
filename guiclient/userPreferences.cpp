@@ -21,7 +21,6 @@
 
 #include <parameter.h>
 
-#include "errorReporter.h"
 #include "hotkey.h"
 #include "imageList.h"
 #include "timeoutHandler.h"
@@ -114,19 +113,6 @@ userPreferences::~userPreferences()
 void userPreferences::languageChange()
 {
   retranslateUi(this);
-}
-
-enum SetResponse userPreferences::set(const ParameterList &pParams)
-{
-  XDialog::set(pParams);
-  QVariant  param;
-  bool      valid;
-
-  param = pParams.value("passwordReset", &valid);
-  if (valid)
-    _tab->setCurrentIndex(_tab->indexOf(_password));
-
-  return NoError;
 }
 
 void userPreferences::setBackgroundImage(int pImageid)
@@ -236,7 +222,6 @@ void userPreferences::sPopulate()
   _accountingToolbar->setChecked(_pref->boolean("ShowGLToolbar"));
   
   _listNumericItemsFirst->setChecked(_pref->boolean("ListNumericItemNumbersFirst"));
-  _disableWheelEvent->setChecked(_pref->boolean("DisableXComboBoxWheelEvent"));
   _ignoreTranslation->setChecked(_pref->boolean("IngoreMissingTranslationFiles"));
 
   _idleTimeout->setValue(_pref->value("IdleTimeout").toInt());
@@ -329,7 +314,6 @@ void userPreferences::sSave(bool close)
   _pref->set("PreferredWarehouse", ((_noWarehouse->isChecked()) ? -1 : _warehouse->id())  );
  
   _pref->set("ListNumericItemNumbersFirst", _listNumericItemsFirst->isChecked());
-  _pref->set("DisableXComboBoxWheelEvent", _disableWheelEvent->isChecked());
   _pref->set("IngoreMissingTranslationFiles", _ignoreTranslation->isChecked());
 
   _pref->set("IdleTimeout", _idleTimeout->value());
@@ -455,15 +439,6 @@ bool userPreferences::save()
       systemError(this, userave.lastError().databaseText(), __FILE__, __LINE__);
       return false;
     }
-
-    XSqlQuery usrq;
-    usrq.prepare("SELECT setUserPreference(:username, 'PasswordResetDate', :passdate);");
-    usrq.bindValue(":username", _username->text());
-    usrq.bindValue(":passdate", QDate::currentDate());
-    usrq.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Saving User Account"),
-                             usrq, __FILE__, __LINE__))
-      return false;
   }
   return true;
 }

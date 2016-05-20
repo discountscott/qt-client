@@ -14,7 +14,6 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSqlError>
-#include "errorReporter.h"
 
 freightClass::freightClass(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
   : XDialog(parent, name, modal, fl)
@@ -100,8 +99,9 @@ void freightClass::sSave()
       _freightclassid = freightSave.value("freightclass_id").toInt();
     else
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Freight Information"),
-                           freightSave, __FILE__, __LINE__);
+      systemError(this, tr("A System Error occurred at %1::%2.")
+                        .arg(__FILE__)
+                        .arg(__LINE__) );
       return;
     }
  
@@ -117,8 +117,7 @@ void freightClass::sSave()
   freightSave.exec();
   if (freightSave.lastError().type() != QSqlError::NoError)
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Freight Information"),
-                         freightSave, __FILE__, __LINE__);
+    systemError(this, freightSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 

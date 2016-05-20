@@ -2,7 +2,7 @@
 <ui version="4.0">
  <comment>This file is part of the xTuple ERP: PostBooks Edition, a free and
 open source Enterprise Resource Planning software suite,
-Copyright (c) 1999-2015 by OpenMFG LLC, d/b/a xTuple.
+Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
 It is licensed to you under the Common Public Attribution License
 version 1.0, the full text of which (including xTuple-specific Exhibits)
 is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -13,16 +13,16 @@ to be bound by its terms.</comment>
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>948</width>
-    <height>980</height>
+    <width>600</width>
+    <height>400</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Sales Credit Memo (Return) Item</string>
+   <string>Return Item</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout_6">
+  <layout class="QGridLayout">
    <item row="0" column="0">
-    <layout class="QGridLayout" name="gridLayout_7">
+    <layout class="QGridLayout">
      <property name="leftMargin">
       <number>12</number>
      </property>
@@ -35,49 +35,6 @@ to be bound by its terms.</comment>
      <property name="spacing">
       <number>12</number>
      </property>
-     <item row="0" column="2" rowspan="5">
-      <layout class="QVBoxLayout">
-       <property name="spacing">
-        <number>0</number>
-       </property>
-       <item>
-        <widget class="QPushButton" name="_close">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <property name="text">
-          <string>&amp;Cancel</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="_save">
-         <property name="text">
-          <string>&amp;Save</string>
-         </property>
-         <property name="default">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer>
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeType">
-          <enum>QSizePolicy::Expanding</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>0</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
-     </item>
      <item row="0" column="0" colspan="2">
       <layout class="QHBoxLayout">
        <item>
@@ -144,143 +101,85 @@ to be bound by its terms.</comment>
        </item>
       </layout>
      </item>
+     <item row="0" column="2" rowspan="4">
+      <layout class="QVBoxLayout">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QPushButton" name="_close">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="text">
+          <string>&amp;Cancel</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="_save">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>&amp;Save</string>
+         </property>
+         <property name="default">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer>
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Expanding</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>0</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
      <item row="1" column="0" colspan="2">
-      <widget class="QGroupBox" name="_itemTypeGroup">
+      <widget class="QGroupBox" name="_itemGroup">
        <property name="title">
         <string/>
        </property>
-       <layout class="QGridLayout" name="gridLayout_8">
-        <item row="0" column="1">
-         <widget class="QGroupBox" name="_itemGroup">
-          <property name="title">
-           <string>Item</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout">
-           <item row="0" column="2">
-            <spacer name="horizontalSpacer_2">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>0</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item row="0" column="1">
-            <layout class="QGridLayout" name="gridLayout_9">
-             <item row="0" column="0">
-              <widget class="QLabel" name="_warehouseLit">
-               <property name="text">
-                <string>Recv. &amp;Site:</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-               </property>
-               <property name="buddy">
-                <cstring>_warehouse</cstring>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="WComboBox" name="_warehouse"/>
-             </item>
-             <item row="1" column="1">
-              <spacer>
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>40</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-            </layout>
-           </item>
-           <item row="0" column="0">
-            <widget class="ItemCluster" name="_item" native="true">
-             <property name="focusPolicy">
-              <enum>Qt::StrongFocus</enum>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QGroupBox" name="_miscGroup">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="title">
-           <string>Miscellaneous</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_5">
-           <item row="0" column="1">
-            <widget class="XLineEdit" name="_itemNumber"/>
-           </item>
-           <item row="1" column="0">
-            <widget class="XLabel" name="_descripLit">
-             <property name="text">
-              <string>Description:</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTop|Qt::AlignTrailing</set>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="XTextEdit" name="_itemDescrip"/>
-           </item>
-           <item row="2" column="0">
-            <widget class="XLabel" name="_salescatLit">
-             <property name="text">
-              <string>Sales Category:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0">
-            <widget class="XLabel" name="_itemNumberLit">
-             <property name="text">
-              <string>Item:</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="XComboBox" name="_salescat">
-             <property name="allowNull" stdset="0">
-              <bool>true</bool>
-             </property>
-             <property name="type">
-              <enum>XComboBox::SalesCategoriesActive</enum>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
+       <layout class="QGridLayout">
         <item row="0" column="0">
-         <layout class="QVBoxLayout" name="verticalLayout_3">
-          <item>
-           <widget class="QRadioButton" name="_itemSelected">
+         <widget class="ItemCluster" name="_item">
+          <property name="focusPolicy">
+           <enum>Qt::StrongFocus</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <layout class="QGridLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="_warehouseLit">
             <property name="text">
-             <string/>
+             <string>Recv. &amp;Site:</string>
             </property>
-            <property name="checked">
-             <bool>true</bool>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+            <property name="buddy">
+             <cstring>_warehouse</cstring>
             </property>
            </widget>
           </item>
-          <item>
-           <spacer name="verticalSpacer_4">
+          <item row="0" column="1">
+           <widget class="WComboBox" name="_warehouse"/>
+          </item>
+          <item row="1" column="1">
+           <spacer>
             <property name="orientation">
              <enum>Qt::Vertical</enum>
             </property>
@@ -294,39 +193,28 @@ to be bound by its terms.</comment>
           </item>
          </layout>
         </item>
-        <item row="1" column="0">
-         <layout class="QVBoxLayout" name="verticalLayout_4">
-          <item>
-           <widget class="QRadioButton" name="_miscSelected">
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="verticalSpacer_3">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
+        <item row="0" column="2">
+         <spacer name="horizontalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>0</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </widget>
      </item>
      <item row="2" column="0" colspan="2">
-      <widget class="QGroupBox" name="_rsnGroup">
+      <widget class="QGroupBox" name="_miscGroup">
        <property name="title">
         <string/>
        </property>
-       <layout class="QGridLayout" name="gridLayout_a">
+       <layout class="QGridLayout">
         <item row="0" column="0">
          <widget class="QLabel" name="_rsnCodeLit">
           <property name="frameShape">
@@ -342,7 +230,7 @@ to be bound by its terms.</comment>
         </item>
         <item row="0" column="1">
          <widget class="XComboBox" name="_rsnCode">
-          <property name="allowNull" stdset="0">
+          <property name="allowNull">
            <bool>true</bool>
           </property>
           <property name="type">
@@ -369,12 +257,12 @@ to be bound by its terms.</comment>
        </layout>
       </widget>
      </item>
-     <item row="4" column="0">
+     <item row="3" column="0">
       <widget class="QGroupBox" name="_inventoryGroup">
        <property name="title">
         <string/>
        </property>
-       <layout class="QGridLayout" name="gridLayout_b">
+       <layout class="QGridLayout">
         <item row="0" column="0">
          <widget class="QLabel" name="_qtyReturnedLit">
           <property name="text">
@@ -500,12 +388,12 @@ to be bound by its terms.</comment>
        </layout>
       </widget>
      </item>
-     <item row="4" column="1">
+     <item row="3" column="1">
       <widget class="QGroupBox" name="_priceGroup">
        <property name="title">
         <string/>
        </property>
-       <layout class="QGridLayout" name="gridLayout_c">
+       <layout class="QGridLayout">
         <item row="0" column="0">
          <widget class="QLabel" name="_discountFromSalePrcntLit">
           <property name="text">
@@ -551,18 +439,18 @@ to be bound by its terms.</comment>
         <item row="1" column="1" colspan="2">
          <layout class="QHBoxLayout">
           <item>
-           <widget class="CurrCluster" name="_netUnitPrice" native="true">
+           <widget class="CurrCluster" name="_netUnitPrice">
             <property name="minimumSize">
              <size>
               <width>160</width>
               <height>0</height>
              </size>
             </property>
-            <property name="currencyEditable" stdset="0">
-             <bool>false</bool>
-            </property>
             <property name="format">
              <enum>CurrDisplay::SalesPrice</enum>
+            </property>
+            <property name="currencyEditable" stdset="0">
+             <bool>false</bool>
             </property>
            </widget>
           </item>
@@ -584,22 +472,6 @@ to be bound by its terms.</comment>
              <string>...</string>
             </property>
            </widget>
-          </item>
-          <item>
-           <spacer>
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Expanding</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>0</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
           </item>
          </layout>
         </item>
@@ -640,17 +512,17 @@ to be bound by its terms.</comment>
          </widget>
         </item>
         <item row="3" column="1" colspan="2">
-         <widget class="CurrCluster" name="_extendedPrice" native="true">
+         <widget class="CurrCluster" name="_extendedPrice">
           <property name="format">
            <enum>CurrDisplay::ExtPrice</enum>
-          </property>
-          <property name="enabled">
-           <bool>false</bool>
           </property>
           <property name="currencyEditable" stdset="0">
            <bool>false</bool>
           </property>
-          <property name="currencyVisible" stdset="0">
+          <property name="currencyVisible">
+           <bool>false</bool>
+          </property>
+          <property name="enabled">
            <bool>false</bool>
           </property>
          </widget>
@@ -658,7 +530,7 @@ to be bound by its terms.</comment>
        </layout>
       </widget>
      </item>
-     <item row="5" column="0" colspan="3">
+     <item row="4" column="0" colspan="3">
       <widget class="QTabWidget" name="tabWidget">
        <property name="currentIndex">
         <number>0</number>
@@ -667,7 +539,7 @@ to be bound by its terms.</comment>
         <attribute name="title">
          <string>Detail</string>
         </attribute>
-        <layout class="QGridLayout" name="gridLayout_d">
+        <layout class="QGridLayout">
          <item row="0" column="0">
           <widget class="QGroupBox" name="_costsGroup">
            <property name="title">
@@ -724,11 +596,11 @@ to be bound by its terms.</comment>
                  </widget>
                 </item>
                 <item row="2" column="1">
-                 <widget class="CurrDisplay" name="_salePrice" native="true">
+                 <widget class="CurrDisplay" name="_salePrice">
                   <property name="format">
                    <enum>CurrDisplay::SalesPrice</enum>
                   </property>
-                  <property name="localControl" stdset="0">
+                  <property name="localControl">
                    <bool>false</bool>
                   </property>
                  </widget>
@@ -750,8 +622,11 @@ to be bound by its terms.</comment>
                  </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="CurrDisplay" name="_listPrice" native="true">
-                  <property name="localControl" stdset="0">
+                 <widget class="CurrDisplay" name="_listPrice">
+                  <property name="format">
+                   <enum>CurrDisplay::Cost</enum>
+                  </property>
+                  <property name="localControl">
                    <bool>false</bool>
                   </property>
                  </widget>
@@ -773,11 +648,11 @@ to be bound by its terms.</comment>
                  </widget>
                 </item>
                 <item row="0" column="1">
-                 <widget class="CurrDisplay" name="_unitCost" native="true">
+                 <widget class="CurrDisplay" name="_unitCost">
                   <property name="format">
                    <enum>CurrDisplay::Cost</enum>
                   </property>
-                  <property name="localControl" stdset="0">
+                  <property name="localControl">
                    <bool>false</bool>
                   </property>
                  </widget>
@@ -830,10 +705,10 @@ to be bound by its terms.</comment>
                   <property name="enabled">
                    <bool>false</bool>
                   </property>
-                  <property name="allowNull" stdset="0">
+                  <property name="allowNull">
                    <bool>true</bool>
                   </property>
-                  <property name="nullStr" stdset="0">
+                  <property name="nullStr">
                    <string>None</string>
                   </property>
                   <property name="type">
@@ -861,7 +736,7 @@ to be bound by its terms.</comment>
                  </widget>
                 </item>
                 <item row="1" column="1">
-                 <widget class="CurrCluster" name="_tax" native="true">
+                 <widget class="CurrCluster" name="_tax">
                   <property name="format">
                    <enum>CurrDisplay::SalesPrice</enum>
                   </property>
@@ -932,40 +807,13 @@ to be bound by its terms.</comment>
         <attribute name="title">
          <string>Notes</string>
         </attribute>
-        <layout class="QGridLayout" name="gridLayout_e">
+        <layout class="QGridLayout">
          <item row="0" column="0">
           <widget class="XTextEdit" name="_comments"/>
          </item>
         </layout>
        </widget>
       </widget>
-     </item>
-     <item row="3" column="0" colspan="2">
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <widget class="XLabel" name="_revAccntLit">
-         <property name="text">
-          <string>Alternate Revenue Account:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="GLCluster" name="_revAccnt" native="true"/>
-       </item>
-       <item>
-        <spacer name="horizontalSpacer_3">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
      </item>
     </layout>
    </item>
@@ -974,19 +822,25 @@ to be bound by its terms.</comment>
  <layoutdefault spacing="5" margin="5"/>
  <customwidgets>
   <customwidget>
+   <class>CurrCluster</class>
+   <extends>CurrDisplay</extends>
+   <header>currcluster.h</header>
+  </customwidget>
+  <customwidget>
    <class>CurrDisplay</class>
    <extends>QWidget</extends>
    <header>currcluster.h</header>
   </customwidget>
   <customwidget>
-   <class>GLCluster</class>
-   <extends>QWidget</extends>
-   <header>glcluster.h</header>
-  </customwidget>
-  <customwidget>
    <class>ItemCluster</class>
    <extends>QWidget</extends>
    <header>itemcluster.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>WComboBox</class>
+   <extends>XComboBox</extends>
+   <header>wcombobox.h</header>
   </customwidget>
   <customwidget>
    <class>XComboBox</class>
@@ -1002,6 +856,7 @@ to be bound by its terms.</comment>
    <class>XLineEdit</class>
    <extends>QLineEdit</extends>
    <header>xlineedit.h</header>
+   <container>1</container>
   </customwidget>
   <customwidget>
    <class>XURLLabel</class>
@@ -1013,36 +868,24 @@ to be bound by its terms.</comment>
    <extends>QTextEdit</extends>
    <header>xtextedit.h</header>
   </customwidget>
-  <customwidget>
-   <class>CurrCluster</class>
-   <extends>CurrDisplay</extends>
-   <header>currcluster.h</header>
-  </customwidget>
-  <customwidget>
-   <class>WComboBox</class>
-   <extends>XComboBox</extends>
-   <header>wcombobox.h</header>
-  </customwidget>
  </customwidgets>
  <tabstops>
   <tabstop>_item</tabstop>
+  <tabstop>_warehouse</tabstop>
+  <tabstop>_rsnCode</tabstop>
   <tabstop>_qtyReturned</tabstop>
-  <tabstop>_updateInv</tabstop>
   <tabstop>_qtyToCredit</tabstop>
   <tabstop>_qtyUOM</tabstop>
+  <tabstop>_discountFromSale</tabstop>
+  <tabstop>_netUnitPrice</tabstop>
   <tabstop>_pricingUOM</tabstop>
-  <tabstop>_itemSelected</tabstop>
+  <tabstop>_extendedPrice</tabstop>
   <tabstop>tabWidget</tabstop>
-  <tabstop>_comments</tabstop>
-  <tabstop>_miscSelected</tabstop>
-  <tabstop>_itemNumber</tabstop>
-  <tabstop>_warehouse</tabstop>
-  <tabstop>_itemDescrip</tabstop>
   <tabstop>_taxType</tabstop>
-  <tabstop>_rsnCode</tabstop>
+  <tabstop>_tax</tabstop>
+  <tabstop>_comments</tabstop>
   <tabstop>_close</tabstop>
   <tabstop>_save</tabstop>
-  <tabstop>_salescat</tabstop>
  </tabstops>
  <resources/>
  <connections>
@@ -1067,6 +910,22 @@ to be bound by its terms.</comment>
    <signal>newId(int)</signal>
    <receiver>_warehouse</receiver>
    <slot>findItemsites(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>_item</sender>
+   <signal>valid(bool)</signal>
+   <receiver>_save</receiver>
+   <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>20</x>

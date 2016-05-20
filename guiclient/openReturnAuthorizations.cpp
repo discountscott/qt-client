@@ -15,7 +15,6 @@
 #include <QVariant>
 
 #include <openreports.h>
-#include "errorReporter.h"
 #include <metasql.h>
 
 #include "mqlutil.h"
@@ -35,7 +34,6 @@ openReturnAuthorizations::openReturnAuthorizations(QWidget* parent, const char* 
   connect(_view, SIGNAL(clicked()), this, SLOT(sView()));
   connect(_ra, SIGNAL(valid(bool)), _view, SLOT(setEnabled(bool)));
   connect(_new, SIGNAL(clicked()), this, SLOT(sNew()));
-  connect(_closeRA, SIGNAL(clicked()), this, SLOT(sCloseRA()));
   connect(_delete, SIGNAL(clicked()), this, SLOT(sDelete()));
   connect(_expired, SIGNAL(clicked()), this, SLOT(sFillList()));
   connect(_unauthorized, SIGNAL(clicked()), this, SLOT(sFillList()));
@@ -51,7 +49,6 @@ openReturnAuthorizations::openReturnAuthorizations(QWidget* parent, const char* 
   {
     connect(_ra, SIGNAL(valid(bool)), _edit, SLOT(setEnabled(bool)));
     connect(_ra, SIGNAL(valid(bool)), _delete, SLOT(setEnabled(bool)));
-    connect(_ra, SIGNAL(valid(bool)), _closeRA, SLOT(setEnabled(bool)));
     connect(_ra, SIGNAL(itemSelected(int)), _edit, SLOT(animateClick()));
   }
   else
@@ -156,26 +153,6 @@ void openReturnAuthorizations::sView()
   omfgThis->handleNewWindow(newdlg);
 }
 
-void openReturnAuthorizations::sCloseRA()
-{
-  XSqlQuery openClose;
-  if (!checkSitePrivs(_ra->id()))
-    return;
-
-  openClose.prepare("UPDATE raitem SET raitem_status = 'C' "
-                    "WHERE ((raitem_rahead_id=:rahead_id) "
-                    " AND (raitem_status <> 'C'));");
-  openClose.bindValue(":rahead_id", _ra->id());
-  openClose.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Closing Return Auth."),
-                           openClose, __FILE__, __LINE__))
-  {
-    return;
-  }
- 
-  omfgThis->sReturnAuthorizationsUpdated();
-}
-
 void openReturnAuthorizations::sDelete()
 {
   XSqlQuery openDelete;
@@ -205,15 +182,13 @@ void openReturnAuthorizations::sDelete()
       openDelete.exec();
       if (openDelete.lastError().type() != QSqlError::NoError)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Return Authorization"),
-                             openDelete, __FILE__, __LINE__);
+        systemError(this, openDelete.lastError().databaseText(), __FILE__, __LINE__);
       }
     }
   }
   else if (checkwo.lastError().type() != QSqlError::NoError)
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Return Authorization"),
-                         checkwo, __FILE__, __LINE__);
+    systemError(this, checkwo.lastError().databaseText(), __FILE__, __LINE__);
   }
   else
   {
@@ -226,8 +201,7 @@ void openReturnAuthorizations::sDelete()
       openDelete.exec();
       if (openDelete.lastError().type() != QSqlError::NoError)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Return Authorization"),
-                             openDelete, __FILE__, __LINE__);
+        systemError(this, openDelete.lastError().databaseText(), __FILE__, __LINE__);
       }
     }
   }
@@ -242,9 +216,6 @@ void openReturnAuthorizations::sPopulateMenu(QMenu *pMenu)
   menuItem->setEnabled(_privileges->check("MaintainReturns"));
 
   menuItem = pMenu->addAction(tr("View..."), this, SLOT(sView()));
-
-  menuItem = pMenu->addAction(tr("Close..."), this, SLOT(sCloseRA()));
-  menuItem->setEnabled(_privileges->check("MaintainReturns"));
 
   menuItem = pMenu->addAction(tr("Delete..."), this, SLOT(sDelete()));
   menuItem->setEnabled(_privileges->check("MaintainReturns"));
@@ -264,9 +235,9 @@ void openReturnAuthorizations::sFillList()
   setParams(params);
   openFillList = mql.toQuery(params);
   _ra->populate(openFillList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Return Authorization Information"),
-                                openFillList, __FILE__, __LINE__))
+  if (openFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, openFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   _ra->setDragString("raheadid=");

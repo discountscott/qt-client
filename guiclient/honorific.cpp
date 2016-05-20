@@ -14,7 +14,6 @@
 #include <QMessageBox>
 #include <QValidator>
 #include <QVariant>
-#include "errorReporter.h"
 
 honorific::honorific(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -129,9 +128,9 @@ void honorific::sSave()
     _code->setFocus();
     return;
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Title"),
-                                honorificSave, __FILE__, __LINE__))
+  else if (honorificSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, honorificSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -140,9 +139,9 @@ void honorific::sSave()
     honorificSave.exec("SELECT NEXTVAL('hnfc_hnfc_id_seq') AS _hnfc_id");
     if (honorificSave.first())
       _honorificid = honorificSave.value("_hnfc_id").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Title"),
-                                  honorificSave, __FILE__, __LINE__))
+    else if (honorificSave.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, honorificSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -166,9 +165,9 @@ void honorific::sSave()
                             tr("You may not rename this Title with the entered value as it is in use by another Title.") );
       return;
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Title"),
-                                  honorificSave, __FILE__, __LINE__))
+    else if (honorificSave.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, honorificSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -180,9 +179,9 @@ void honorific::sSave()
   honorificSave.bindValue(":hnfc_id", _honorificid);
   honorificSave.bindValue(":hnfc_code", _code->text());
   honorificSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Title"),
-                                honorificSave, __FILE__, __LINE__))
+  if (honorificSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, honorificSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -201,9 +200,9 @@ void honorific::populate()
   {
     _code->setText(honorificpopulate.value("hnfc_code").toString());
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Title Information"),
-                                honorificpopulate, __FILE__, __LINE__))
+  else if (honorificpopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, honorificpopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

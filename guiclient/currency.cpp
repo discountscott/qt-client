@@ -15,8 +15,6 @@
 #include <QVariant>
 
 #include "currencySelect.h"
-#include "errorReporter.h"
-#include "guiErrorCheck.h"
 
 currency::currency(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -59,8 +57,7 @@ bool currency::isBaseSet()
     }
     else if (currencyisBaseSet.lastError().type() != QSqlError::NoError)
     {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Currency Information"),
-                         currencyisBaseSet, __FILE__, __LINE__);
+	systemError(this, currencyisBaseSet.lastError().databaseText(), __FILE__, __LINE__);
     }
     return numSet != 0;
 }
@@ -116,20 +113,40 @@ void currency::sSave()
   XSqlQuery currencySave;
   sConfirmBaseFlag();
 
-  QList<GuiErrorCheck> errors;
-  errors << GuiErrorCheck(_currName->text().trimmed().isEmpty(), _currName,
-                          tr("Currency name is required."))
-         << GuiErrorCheck(_currAbbr->text().trimmed().isEmpty()
-                       && _currSymbol->text().trimmed().isEmpty(), _currSymbol,
-                          tr("Either the currency symbol or abbreviation must be "
-		              "supplied.\n(Both would be better)."))
-         << GuiErrorCheck(_currAbbr->text().length() > 3, _currAbbr,
-                          tr("The currency abbreviation must have "
-		         "3 or fewer characters.\n"
-			 "ISO abbreviations are exactly 3 characters long."))
-    ;
-  if (GuiErrorCheck::reportErrors(this, tr("Cannot Save Currency"), errors))
+  if (_currName->text().isEmpty())
+  {
+    QMessageBox::critical(this, tr("Name Required")
+                      .arg(__FILE__)
+                      .arg(__LINE__),
+		      tr("Currency name is required."));
+    _currName->setFocus();
     return;
+  }
+
+  if (_currAbbr->text().isEmpty() && _currSymbol->text().isEmpty())
+  {
+    QMessageBox::critical(this, tr("Symbol or Abbreviation Required")
+                      .arg(__FILE__)
+                      .arg(__LINE__),
+		      tr("Either the currency symbol or abbreviation must be "
+		         "supplied.\n(Both would be better.)")
+		      );
+    _currSymbol->setFocus();
+    return;
+  }
+  
+  if (_currAbbr->text().length() > 3)
+  {
+    QMessageBox::critical(this, tr("Abbreviation Too Long")
+                      .arg(__FILE__)
+                      .arg(__LINE__),
+		      tr("The currency abbreviation must have "
+		         "3 or fewer characters.\n"
+			 "ISO abbreviations are exactly 3 characters long.")
+		      );
+    return;
+  }
+
   
   if (_mode == cNew)
   {
@@ -147,15 +164,15 @@ void currency::sSave()
     currencySave.bindValue(":curr_id", _currid);
    }
   
-  currencySave.bindValue(":curr_name", _currName->text().trimmed());
-  currencySave.bindValue(":curr_symbol", _currSymbol->text().trimmed());
-  currencySave.bindValue(":curr_abbr", _currAbbr->text().trimmed());
+  currencySave.bindValue(":curr_name", _currName->text());
+  currencySave.bindValue(":curr_symbol", _currSymbol->text());
+  currencySave.bindValue(":curr_abbr", _currAbbr->text());
   currencySave.bindValue(":curr_base", QVariant(_currBase->isChecked()));
   currencySave.exec();
 
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Currency Information"),
-                                currencySave, __FILE__, __LINE__))
+  if (currencySave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, currencySave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   
@@ -179,9 +196,9 @@ void currency::populate()
 
     baseOrig = _currBase->isChecked();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Currency Information"),
-                                currencypopulate, __FILE__, __LINE__))
+  else if (currencypopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, currencypopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -225,9 +242,9 @@ void currency::sSelect()
       _currAbbr->setText(cs.value("country_curr_abbr").toString());
       _currSymbol->setText(cs.value("country_curr_symbol").toString());
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Currency Information"),
-                                  cs, __FILE__, __LINE__))
+    else if (cs.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, cs.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }

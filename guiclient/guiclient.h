@@ -108,7 +108,7 @@ extern Metricsenc  *_metricsenc;
 enum SetResponse
 {
   NoError, NoError_Cancel, NoError_Run, NoError_Print, NoError_Submit,
-  Error_NoSetup, Error_AlreadyOpen, UndefinedError
+  Error_NoSetup, UndefinedError
 };
 
 
@@ -236,10 +236,10 @@ class GUIClient : public QMainWindow
 
     void loadScriptGlobals(QScriptEngine * engine);
 
-#ifdef Q_OS_MAC
-    void updateMacDockMenu(QWidget *w);
-    void removeFromMacDockMenu(QWidget *w);
-#endif
+    #ifdef Q_OS_MAC
+    		void updateMacDockMenu(QWidget *w);
+    		void removeFromMacDockMenu(QWidget *w);
+    	#endif
 
     //check hunspell is ready
     Q_INVOKABLE bool hunspell_ready();

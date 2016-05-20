@@ -16,8 +16,6 @@
 #include <QtScript>
 
 Q_DECLARE_METATYPE(QIODevice*)
-Q_DECLARE_METATYPE(enum QIODevice::OpenModeFlag)
-Q_DECLARE_METATYPE(QIODevice::OpenMode)
 
 void setupQIODeviceProto(QScriptEngine *engine);
 QScriptValue constructQIODevice(QScriptContext *context, QScriptEngine *engine);
@@ -35,9 +33,7 @@ class QIODeviceProto : public QObject, public QScriptable
     Q_INVOKABLE bool                    canReadLine() const;
     Q_INVOKABLE void                    close();
     Q_INVOKABLE QString                 errorString() const;
-    // Javascript does not support pass by reference String parameters. Return char instead.
-    //Q_INVOKABLE bool                    getChar(char *c);
-    Q_INVOKABLE char                    getChar();
+    Q_INVOKABLE bool                    getChar(char *c);
     Q_INVOKABLE bool                    isOpen() const;
     Q_INVOKABLE bool                    isReadable() const;
     Q_INVOKABLE bool                    isSequential() const;
@@ -62,11 +58,8 @@ class QIODeviceProto : public QObject, public QScriptable
     Q_INVOKABLE bool                    waitForBytesWritten(int msecs);
     Q_INVOKABLE bool                    waitForReadyRead(int msecs);
     Q_INVOKABLE qint64                  write(const QByteArray &byteArray);
-    // Javascript does not support pass by reference String parameters. Don't use a const pointer.
-    //Q_INVOKABLE qint64                  write(const char *data);
-    //Q_INVOKABLE qint64                  write(const char *data, qint64 maxSize);
-    Q_INVOKABLE qint64                  write(char data);
-    Q_INVOKABLE qint64                  write(char data, qint64 maxSize);
+    Q_INVOKABLE qint64                  write(const char *data);
+    Q_INVOKABLE qint64                  write(const char *data, qint64 maxSize);
 
   public slots:
 

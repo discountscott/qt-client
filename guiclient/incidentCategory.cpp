@@ -14,7 +14,6 @@
 #include <QSqlError>
 #include <QValidator>
 #include <QVariant>
-#include <errorReporter.h>
 
 incidentCategory::incidentCategory(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -122,9 +121,9 @@ void incidentCategory::sSave()
     incidentSave.exec("SELECT NEXTVAL('incdtcat_incdtcat_id_seq') AS _incdtcat_id");
     if (incidentSave.first())
       _incdtcatId = incidentSave.value("_incdtcat_id").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Incident Category Information"),
-                                  incidentSave, __FILE__, __LINE__))
+    else if (incidentSave.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, incidentSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -150,9 +149,9 @@ void incidentCategory::sSave()
 			       "Incident Category.") );
       return;
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Incident Category Information"),
-                                  incidentSave, __FILE__, __LINE__))
+    else if (incidentSave.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, incidentSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -171,9 +170,9 @@ void incidentCategory::sSave()
   if (_ediprofile->id() != -1)
     incidentSave.bindValue(":incdtcat_ediprofile_id", _ediprofile->id());
   incidentSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Incident Category Information"),
-                                incidentSave, __FILE__, __LINE__))
+  if (incidentSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, incidentSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -195,9 +194,9 @@ void incidentCategory::populate()
     _descrip->setText(incidentpopulate.value("incdtcat_descrip").toString());
     _ediprofile->setId(incidentpopulate.value("ediprofile").toInt());
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Incident Category Information"),
-                                incidentpopulate, __FILE__, __LINE__))
+  else if (incidentpopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, incidentpopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

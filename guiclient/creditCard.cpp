@@ -17,7 +17,6 @@
 #include <QVariant>
 
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 #define DEBUG false
 
@@ -38,6 +37,8 @@ int creditCard::saveCreditCard(QWidget *parent,
                               bool ccActive)
 {
   XSqlQuery creditaveCreditCard;
+  bool everythingOK;
+  everythingOK = true;
   int mode = cNew;
   int seq = 0;
 
@@ -151,9 +152,9 @@ int creditCard::saveCreditCard(QWidget *parent,
     creditaveCreditCard.exec();
     if (creditaveCreditCard.first())
       cceditreturn = creditaveCreditCard.value("cc_back").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, parent, tr("Error Saving Credit Card"),
-                                  creditaveCreditCard, __FILE__, __LINE__))
+    else if (creditaveCreditCard.lastError().type() != QSqlError::NoError)
     {
+      systemError(parent, creditaveCreditCard.lastError().databaseText(), __FILE__, __LINE__);
       return -2;
     }
   }
@@ -179,9 +180,9 @@ int creditCard::saveCreditCard(QWidget *parent,
     creditaveCreditCard.exec("SELECT NEXTVAL('ccard_ccard_id_seq') AS ccard_id;");
     if (creditaveCreditCard.first())
       ccId = creditaveCreditCard.value("ccard_id").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, parent, tr("Error Saving Credit Card"),
-                                  creditaveCreditCard, __FILE__, __LINE__))
+    else if (creditaveCreditCard.lastError().type() != QSqlError::NoError)
     {
+      systemError(parent, creditaveCreditCard.lastError().databaseText(), __FILE__, __LINE__);
       return -2;
     }
 
@@ -190,9 +191,9 @@ int creditCard::saveCreditCard(QWidget *parent,
     creditaveCreditCard.exec();
     if (creditaveCreditCard.first())
       seq = creditaveCreditCard.value("ccard_seq").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, parent, tr("Error Saving Credit Card"),
-                                  creditaveCreditCard, __FILE__, __LINE__))
+    else if (creditaveCreditCard.lastError().type() != QSqlError::NoError)
     {
+      systemError(parent, creditaveCreditCard.lastError().databaseText(), __FILE__, __LINE__);
       return -2;
     }
 
@@ -252,9 +253,9 @@ int creditCard::saveCreditCard(QWidget *parent,
   creditaveCreditCard.bindValue(":key", key);
   creditaveCreditCard.bindValue(":ccard_type", ccType);
   creditaveCreditCard.exec();
-  if (ErrorReporter::error(QtCriticalMsg, parent, tr("Error Saving Credit Card"),
-                                creditaveCreditCard, __FILE__, __LINE__))
+  if (creditaveCreditCard.lastError().type() != QSqlError::NoError)
   {
+    systemError(parent, creditaveCreditCard.lastError().databaseText(), __FILE__, __LINE__);
     return -2;
   }
 
@@ -267,9 +268,9 @@ int creditCard::saveCreditCard(QWidget *parent,
     creditaveCreditCard.bindValue(":key",          key);
     creditaveCreditCard.bindValue(":ccard_id",     ccId);
     creditaveCreditCard.exec();
-    if (ErrorReporter::error(QtCriticalMsg, parent, tr("Error Saving Credit Card"),
-                                  creditaveCreditCard, __FILE__, __LINE__))
+    if (creditaveCreditCard.lastError().type() != QSqlError::NoError)
     {
+      systemError(parent, creditaveCreditCard.lastError().databaseText(), __FILE__, __LINE__);
       return -2;
     }
   }
@@ -300,6 +301,7 @@ void creditCard::languageChange()
 }
 
 const char *_fundsTypes2[] = { "M", "V", "A", "D" };
+const int _fundsTypeCount2 = 4;
 
 enum SetResponse creditCard::set(const ParameterList &pParams)
 {
@@ -334,8 +336,7 @@ enum SetResponse creditCard::set(const ParameterList &pParams)
 
     }
     else if (cust.lastError().type() != QSqlError::NoError)
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Credit Card Information"),
-                         cust, __FILE__, __LINE__);
+      systemError(this, cust.lastError().databaseText(), __FILE__, __LINE__);
 
     if (param.toString() == "new")
     {
@@ -505,9 +506,9 @@ void creditCard::populate()
         _fundsType2->setCurrentIndex(counter);
 
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Credit Card Information"),
-                                creditpopulate, __FILE__, __LINE__))
+  else if (creditpopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, creditpopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

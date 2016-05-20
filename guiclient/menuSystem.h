@@ -46,7 +46,6 @@ class menuSystem : public QObject
     void sHotKeys();
     void sRescanPrivileges();
     void sMaintainUsers();
-    void sUserPrivileges();
     void sMaintainGroups();
     void sNewEmployee();
     void sListEmployees();

@@ -13,7 +13,6 @@
 #include <QMessageBox>
 #include <QSqlError>
 #include <QVariant>
-#include "errorReporter.h"
 
 profitCenter::profitCenter(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -102,9 +101,9 @@ void profitCenter::sSave()
     profitSave.exec("SELECT NEXTVAL('prftcntr_prftcntr_id_seq') AS prftcntr_id;");
     if (profitSave.first())
       _prftcntrid = profitSave.value("prftcntr_id").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Profit Center Information"),
-                                  profitSave, __FILE__, __LINE__))
+    else if (profitSave.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, profitSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -138,9 +137,9 @@ void profitCenter::sSave()
   profitSave.bindValue(":prftcntr_number", _number->text());
   profitSave.bindValue(":prftcntr_descrip", _descrip->toPlainText());
   profitSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Profit Center Information"),
-                                           profitSave, __FILE__, __LINE__))
+  if (profitSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, profitSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -153,9 +152,9 @@ void profitCenter::sSave()
     profitSave.bindValue(":prftcntr_number", _number->text());
     profitSave.bindValue(":old_prftcntr_number", _cachedNumber);
     profitSave.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Profit Center Information"),
-                                  profitSave, __FILE__, __LINE__))
+    if (profitSave.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, profitSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -178,10 +177,9 @@ void profitCenter::populate()
 
     _cachedNumber = profitpopulate.value("prftcntr_number").toString();
   }
-
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Profit Center Information"),
-                                profitpopulate, __FILE__, __LINE__))
+  else if (profitpopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, profitpopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

@@ -22,7 +22,6 @@
 #include <QMessageBox>
 #include <QSqlError>
 #include <QToolBar>
-#include "errorReporter.h"
 
 todoList::todoList(QWidget* parent, const char*, Qt::WindowFlags fl)
   : display(parent, "todoList", fl)
@@ -354,9 +353,9 @@ void todoList::sDelete()
       else if (ret == QMessageBox::Yes)
         deleteOne = true;
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving To Do Item Information"),
-                                  recurq, __FILE__, __LINE__))
+    else if (recurq.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, recurq.lastError().text(), __FILE__, __LINE__);
       return;
     }
     else if (QMessageBox::warning(this, tr("Delete List Item?"),
@@ -386,14 +385,12 @@ void todoList::sDelete()
 
     if (procresult < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Recurring To Do Item Information"),
-                             storedProcErrorLookup("deleteOpenRecurringItems", procresult),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("deleteOpenRecurringItems", procresult));
       return;
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Recurring To Do Item Information"),
-                                  todoDelete, __FILE__, __LINE__))
+    else if (todoDelete.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, todoDelete.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -410,9 +407,9 @@ void todoList::sDelete()
                         "  AND todoitem_id!=:id;");
     todoDelete.bindValue(":id",   list()->id());
     todoDelete.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Recurring To Do Item Information"),
-                                  todoDelete, __FILE__, __LINE__))
+    if (todoDelete.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, todoDelete.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -433,16 +430,14 @@ void todoList::sDelete()
     int result = todoDelete.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving To Do Item Information"),
-                             storedProcErrorLookup("deleteTodoItem", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("deleteTodoItem", result));
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving To Do Item Information"),
-                                todoDelete, __FILE__, __LINE__))
+  else if (todoDelete.lastError().type() != QSqlError::NoError)
   {
-     return;
+    systemError(this, todoDelete.lastError().databaseText(), __FILE__, __LINE__);
+    return;
   }
   sFillList();
 }

@@ -18,7 +18,6 @@
 #include <QVariant>
 
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 reassignLotSerial::reassignLotSerial(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -95,9 +94,9 @@ enum SetResponse reassignLotSerial::set(const ParameterList &pParams)
           _source->setCurrentItem(_source->topLevelItem(i));
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Information"),
-                                  reassignet, __FILE__, __LINE__))
+    else if (reassignet.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, reassignet.lastError().databaseText(), __FILE__, __LINE__);
       return UndefinedError;
     }
   }
@@ -165,15 +164,14 @@ void reassignLotSerial::sReassign()
     int result = reassignReassign.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Reassigning Lot/Serial Number"),
-                             storedProcErrorLookup("reassignLotSerial", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("reassignLotSerial", result),
+		  __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Reassigning Lot/Serial Number"),
-                                reassignReassign, __FILE__, __LINE__))
+  else if (reassignReassign.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, reassignReassign.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -239,9 +237,9 @@ void reassignLotSerial::sFillList()
       reassignFillList.exec();
       _source->populate(reassignFillList);
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Information"),
-                                  reassignFillList, __FILE__, __LINE__))
+    else if (reassignFillList.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, reassignFillList.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }

@@ -24,7 +24,6 @@
 #include "reserveSalesOrderItem.h"
 #include "shipOrder.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 issueToShipping::issueToShipping(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl),
@@ -186,9 +185,9 @@ void issueToShipping::sCatchSoitemid(int pSoitemid)
     _soitem->setId(pSoitemid);
     sIssueStock();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Information"),
-                                issueCatchSoitemid, __FILE__, __LINE__))
+  else if (issueCatchSoitemid.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, issueCatchSoitemid.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -214,9 +213,9 @@ void issueToShipping::sCatchToitemid(int porderitemid)
     _soitem->setId(porderitemid);
     sIssueStock();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Information"),
-                                issueCatchToitemid, __FILE__, __LINE__))
+  else if (issueCatchToitemid.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, issueCatchToitemid.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -285,9 +284,9 @@ void issueToShipping::sCatchWoid(int pWoid)
       _soitem->setId(issueCatchWoid.value("coitem_id").toInt());
       sIssueStock();
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Information"),
-                                  issueCatchWoid, __FILE__, __LINE__))
+    else if (issueCatchWoid.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, issueCatchWoid.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -367,26 +366,24 @@ bool issueToShipping::sufficientItemInventory(int porderitemid)
                        "   AND  (toitem_tohead_id=tohead_id)"
                        "   AND  (toitem_id=<? value(\"toitem_id\") ?>));"
                        "<? endif ?>" ;
-         MetaSQLQuery errm(errs);
-         issueufficientItemInventory = errm.toQuery(errp);
-         if (! issueufficientItemInventory.first() && issueufficientItemInventory.lastError().type() != QSqlError::NoError)
-           ErrorReporter::error(QtCriticalMsg, this, tr("Insufficient Inventory To Ship"),
-                              issueufficientItemInventory, __FILE__, __LINE__);
-
-         ErrorReporter::error(QtCriticalMsg, this, tr("Insufficient Inventory To Ship"),
-                                  storedProcErrorLookup("sufficientInventoryToShipItem", result)
-                                  .arg(issueufficientItemInventory.value("item_number").toString())
-                                  .arg(issueufficientItemInventory.value("warehous_code").toString()),
-                                  __FILE__, __LINE__);
-         return false;
-       }
-     }
-     else if (ErrorReporter::error(QtCriticalMsg, this, tr("Insufficient Inventory To Ship"),
-                                  issueufficientItemInventory, __FILE__, __LINE__))
-     {
-       return false;
-     }
-   }
+        MetaSQLQuery errm(errs);
+        issueufficientItemInventory = errm.toQuery(errp);
+        if (! issueufficientItemInventory.first() && issueufficientItemInventory.lastError().type() != QSqlError::NoError)
+          systemError(this, issueufficientItemInventory.lastError().databaseText(), __FILE__, __LINE__);
+        systemError(this,
+                    storedProcErrorLookup("sufficientInventoryToShipItem",
+                                          result)
+                    .arg(issueufficientItemInventory.value("item_number").toString())
+                    .arg(issueufficientItemInventory.value("warehous_code").toString()), __FILE__, __LINE__);
+        return false;
+      }
+    }
+    else if (issueufficientItemInventory.lastError().type() != QSqlError::NoError)
+    {
+      systemError(this, issueufficientItemInventory.lastError().databaseText(), __FILE__, __LINE__);
+      return false;
+    }
+  }
 
   return true;
 }
@@ -406,15 +403,13 @@ bool issueToShipping::sufficientInventory(int porderheadid)
       int result = issueufficientInventory.value("result").toInt();
       if (result < 0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Insufficient Inventory To Ship"),
-                               storedProcErrorLookup("sufficientInventoryToShipOrder", result),
-                               __FILE__, __LINE__);
+        systemError(this, storedProcErrorLookup("sufficientInventoryToShipOrder", result), __FILE__, __LINE__);
         return false;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Insufficient Inventory To Ship"),
-                                  issueufficientInventory, __FILE__, __LINE__))
+    else if (issueufficientInventory.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, issueufficientInventory.lastError().databaseText(), __FILE__, __LINE__);
       return false;
     }
   }
@@ -471,9 +466,8 @@ bool issueToShipping::sIssueLineBalance(int id, int altId)
       if (itemlocSeries < 0)
       {
         rollback.exec();
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Production"),
-                               storedProcErrorLookup("postProduction", itemlocSeries),
-                               __FILE__, __LINE__);
+        systemError(this, storedProcErrorLookup("postProduction", itemlocSeries),
+                    __FILE__, __LINE__);
         return false;
       }
       
@@ -498,9 +492,8 @@ bool issueToShipping::sIssueLineBalance(int id, int altId)
         else
         {
           rollback.exec();
-          ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                               tr("Inventory history not found")
-                               .arg(windowTitle()),__FILE__,__LINE__);
+          systemError(this, tr("Inventory history not found"),
+                      __FILE__, __LINE__);
           return false;
         }
       }
@@ -508,8 +501,7 @@ bool issueToShipping::sIssueLineBalance(int id, int altId)
     else if (prod.lastError().type() != QSqlError::NoError)
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Production"),
-                           prod, __FILE__, __LINE__);
+      systemError(this, prod.lastError().databaseText(), __FILE__, __LINE__);
       return false;
     }
   }
@@ -529,9 +521,8 @@ bool issueToShipping::sIssueLineBalance(int id, int altId)
     if (result < 0)
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Issuing Item"),
-                             storedProcErrorLookup("issueLineBalanceToShipping", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("issueLineBalanceToShipping", result),
+                  __FILE__, __LINE__);
       return false;
     }
     else if (distributeInventory::SeriesAdjust(result, this) == XDialog::Rejected)
@@ -561,8 +552,7 @@ bool issueToShipping::sIssueLineBalance(int id, int altId)
       if (lsdetail.lastError().type() != QSqlError::NoError)
       {
         rollback.exec();
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Issuing Item"),
-                             lsdetail, __FILE__, __LINE__);
+        systemError(this, lsdetail.lastError().databaseText(), __FILE__, __LINE__);
         return false;
       }
 	}
@@ -572,8 +562,7 @@ bool issueToShipping::sIssueLineBalance(int id, int altId)
   else if (issue.lastError().type() != QSqlError::NoError)
   {
     rollback.exec();
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Issuing Item"),
-                         issue, __FILE__, __LINE__);\
+    systemError(this, issue.lastError().databaseText(), __FILE__, __LINE__);
     return false;
   }
   return true;
@@ -592,9 +581,8 @@ void issueToShipping::sIssueAllBalance()
     XTreeWidgetItem *cursor = (XTreeWidgetItem*)_soitem->topLevelItem(i);
     if (sIssueLineBalance(cursor->id(),cursor->altId()))
       refresh = true;
-    // attempt to issue all lines
-    //else
-    //  break;
+    else
+      break;
   }
 
   if (refresh)
@@ -624,10 +612,9 @@ void issueToShipping::sReturnStock()
       if (result < 0)
       {
         rollback.exec();
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Returning Stock"),
-                               storedProcErrorLookup("returnItemShipments", result),
-                               __FILE__, __LINE__);
-          return;
+        systemError( this, storedProcErrorLookup("returnItemShipments", result),
+                     __FILE__, __LINE__);
+        return;
       }
       else if (distributeInventory::SeriesAdjust(result, this) == XDialog::Rejected)
       {
@@ -640,8 +627,7 @@ void issueToShipping::sReturnStock()
     else if (issueReturnStock.lastError().type() != QSqlError::NoError)
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Returning Stock"),
-                           issueReturnStock, __FILE__, __LINE__);
+      systemError(this, issueReturnStock.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -662,22 +648,24 @@ void issueToShipping::sShip()
   {
     // Reset _order so that lock is released prior to shipping and potentially auto receiving
     // to avoid locking conflicts
+    _transDate->setDate(omfgThis->dbDate());
     _order->setId(-1);
     _order->setFocus();
 
     ParameterList params;
     params.append("shiphead_id", issueShip.value("shiphead_id").toInt());
-    params.append("transdate", _transDate->date());
 
     shipOrder newdlg(this, "", true);
     if (newdlg.set(params) == NoError && newdlg.exec() != XDialog::Rejected)
     {
-      _transDate->setDate(omfgThis->dbDate());
+      //_transDate->setDate(omfgThis->dbDate());
+      //_order->setId(-1);
+      //_order->setFocus();
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Issuing Item"),
-                                issueShip, __FILE__, __LINE__))
+  else if (issueShip.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, issueShip.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   else
@@ -721,15 +709,16 @@ void issueToShipping::sReserveLineBalance()
       int result = reserveSales.value("result").toInt();
       if (result < 0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Information"),
-                               storedProcErrorLookup("reserveSoLineBalance", result),
-                               __FILE__, __LINE__);
+        systemError(this, storedProcErrorLookup("reserveSoLineBalance", result) +
+                    tr("<br>Line Item %1").arg(selected[i]->text(0)),
+                    __FILE__, __LINE__);
         return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Information"),
-                                  reserveSales, __FILE__, __LINE__))
+    else if (reserveSales.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, tr("Line Item %1\n").arg(selected[i]->text(0)) +
+                  reserveSales.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -751,15 +740,16 @@ void issueToShipping::sUnreserveStock()
       int result = unreserveSales.value("result").toInt();
       if (result < 0)
       {
-        ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Information"),
-                               storedProcErrorLookup("unreservedSoLineQty", result),
-                               __FILE__, __LINE__);
+        systemError(this, storedProcErrorLookup("unreservedSoLineQty", result) +
+                    tr("<br>Line Item %1").arg(selected[i]->text(0)),
+                    __FILE__, __LINE__);
         return;
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Information"),
-                                  unreserveSales, __FILE__, __LINE__))
+    else if (unreserveSales.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, tr("Line Item %1\n").arg(selected[i]->text(0)) +
+                  unreserveSales.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
   }
@@ -779,28 +769,33 @@ void issueToShipping::sFillList()
   }
   else if (_order->isSO())
   {
-    issueFillList.prepare("SELECT soHoldType(cohead_id) AS holdtype "
-                          "FROM cohead "
-                          "WHERE (cohead_id=:sohead_id);" );
+    issueFillList.prepare( "SELECT cohead_holdtype,"
+                           "       (calcSalesOrderAmt(cohead_id) - "
+                           "       COALESCE(SUM(currToCurr(aropenalloc_curr_id, cohead_curr_id,"
+                           "                               aropenalloc_amount, cohead_orderdate)),0)) AS balance "
+                           "FROM cohead LEFT OUTER JOIN aropenalloc ON (aropenalloc_doctype='S' AND"
+                           "                                            aropenalloc_doc_id=cohead_id) "
+                           "WHERE (cohead_id=:sohead_id) "
+                           "GROUP BY cohead_holdtype, cohead_id;" );
     issueFillList.bindValue(":sohead_id", _order->id());
     issueFillList.exec();
     if (issueFillList.first())
     {
-      if (issueFillList.value("holdtype").toString() == "C")
+      if ( (issueFillList.value("cohead_holdtype").toString() == "C") && (issueFillList.value("balance").toDouble() > 0.0) )
       {
         QMessageBox::critical( this, tr("Cannot Issue Stock"),
                               storedProcErrorLookup("issuetoshipping", -12));
         _order->setId(-1);
         _order->setFocus();
       }
-      else if (issueFillList.value("holdtype").toString() == "P")
+      else if (issueFillList.value("cohead_holdtype").toString() == "P")
       {
         QMessageBox::critical( this, tr("Cannot Issue Stock"),
                               storedProcErrorLookup("issuetoshipping", -13));
         _order->setId(-1);
         _order->setFocus();
       }
-      else if (issueFillList.value("holdtype").toString() == "R")
+      else if (issueFillList.value("cohead_holdtype").toString() == "R")
       {
         QMessageBox::critical( this, tr("Cannot Issue Stock"),
                               storedProcErrorLookup("issuetoshipping", -14));
@@ -808,9 +803,9 @@ void issueToShipping::sFillList()
         _order->setFocus();
       }
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Information"),
-                                  issueFillList, __FILE__, __LINE__))
+    else if (issueFillList.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, issueFillList.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
     else
@@ -828,10 +823,8 @@ void issueToShipping::sFillList()
   }
   else
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                         tr("Window:%1:\n Unrecognized order type %2")
-                         .arg(windowTitle())
-                         .arg(_order->type()),__FILE__,__LINE__);
+    systemError(this, tr("Unrecognized order type %1").arg(_order->type()),
+                __FILE__, __LINE__);
     return;
   }
 
@@ -850,9 +843,9 @@ void issueToShipping::sFillList()
   {
     _shipment->setText(listq.value("shiphead_number").toString());
   }
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Item Information"),
-                                listq, __FILE__, __LINE__))
+  if (listq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, listq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -918,9 +911,9 @@ void issueToShipping::sBcFind()
 
   if(!issueBcFind.first())
   {
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Barcode Information"),
-                                  issueBcFind, __FILE__, __LINE__))
+    if (issueBcFind.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, issueBcFind.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
     XMessageBox::message(this, QMessageBox::Warning, tr("No Match Found"),
@@ -998,9 +991,9 @@ void issueToShipping::sBcFind()
   // If there are no records then the order is complete
   if(!issueBcFind.first())
   {
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Barcode Information"),
-                                  issueBcFind, __FILE__, __LINE__))
+    if (issueBcFind.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, issueBcFind.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
     XMessageBox::message( this, QMessageBox::Information, tr("Order Complete"),

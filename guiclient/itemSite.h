@@ -68,7 +68,6 @@ private:
     char _itemType;
     bool _wasLotSerial;
     bool _wasLocationControl;
-    bool _wasCostJob;
 
 };
 

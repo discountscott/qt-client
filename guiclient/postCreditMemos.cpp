@@ -14,7 +14,6 @@
 #include <QMessageBox>
 #include <openreports.h>
 #include "distributeInventory.h"
-#include "errorReporter.h"
 
 postCreditMemos::postCreditMemos(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -81,8 +80,9 @@ void postCreditMemos::sPost()
   postPost.exec("SELECT fetchJournalNumber('AR-CM') AS result");
   if (!postPost.first())
   {
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Journal Number"),
-                         postPost, __FILE__, __LINE__);
+    systemError(this, tr("A System Error occurred at %1::%2.")
+                      .arg(__FILE__)
+                      .arg(__LINE__) );
     return;
   }
 
@@ -113,8 +113,9 @@ void postCreditMemos::sPost()
     else if (result < 0)
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Credit Memo"),
-                           postPost, __FILE__, __LINE__);
+      systemError( this, tr("A System Error occurred at postCreditMemos::%1, Error #%2.")
+                         .arg(__LINE__)
+                         .arg(postPost.value("result").toInt()) );
       return;
     }
     else if (distributeInventory::SeriesAdjust(postPost.value("result").toInt(), this) == XDialog::Rejected)
@@ -156,8 +157,8 @@ void postCreditMemos::sPost()
   else
   {
     rollback.exec();
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Posting Credit Memo"),
-                         postPost, __FILE__, __LINE__);
+    systemError( this, tr("A System Error occurred at postCreditMemos::%1.")
+                       .arg(__LINE__) );
     return;
   }
 

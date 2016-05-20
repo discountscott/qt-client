@@ -21,7 +21,6 @@
 
 #include "package.h"
 #include "storedProcErrorLookup.h"
-#include "errorReporter.h"
 
 packages::packages(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -86,9 +85,9 @@ void packages::sFillList()
              "ORDER BY pkghead_name, pkghead_version DESC;" );
   packagesFillList.exec();
   _package->populate(packagesFillList);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Package Information"),
-                                packagesFillList, __FILE__, __LINE__))
+  if (packagesFillList.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, packagesFillList.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }
@@ -113,15 +112,14 @@ void packages::sDelete()
     int result = packagesDelete.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Package Information"),
-                             storedProcErrorLookup("deletePackage", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("deletePackage", result),
+                  __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Package"),
-                                packagesDelete, __FILE__, __LINE__))
+  else if (packagesDelete.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, packagesDelete.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -200,13 +198,12 @@ void packages::sLoad()
       proc_args << "-passwd=XXXXX";
     }
     QApplication::restoreOverrideCursor();
-    ErrorReporter::error(QtCriticalMsg, this, tr("Error Occurred"),
-                         tr("%1: There was an error running the Updater program: "
-                            "<br>%2 %3<br><br><pre>%4</pre>")
-                         .arg(windowTitle())
-                         .arg(proc_path)
-                         .arg(proc_args.join(" "))
-                         .arg(QString(proc.readAllStandardError())),__FILE__,__LINE__);
+    systemError(this,
+                tr("<p>There was an error running the Updater program: "
+                   "<br>%1 %2<br><br><pre>%3</pre>")
+		  .arg(proc_path)
+                  .arg(proc_args.join(" "))
+		  .arg(QString(proc.readAllStandardError())));
     return;
   }
 
@@ -293,15 +290,15 @@ void packages::sEnable()
     int result = eq.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Enabling Package"),
-                             storedProcErrorLookup("enablePackage", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("enablePackage", result)
+                          .arg(_package->id()),
+                  __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Enabling Package"),
-                                eq, __FILE__, __LINE__))
+  else if (eq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, eq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   sFillList();
@@ -318,15 +315,15 @@ void packages::sDisable()
     int result = dq.value("result").toInt();
     if (result < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this, tr("Error Disabling Package"),
-                             storedProcErrorLookup("disablePackage", result),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("disablePackage", result)
+                          .arg(_package->id()),
+                  __FILE__, __LINE__);
       return;
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Disabling Package"),
-                                dq, __FILE__, __LINE__))
+  else if (dq.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, dq.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   sFillList();

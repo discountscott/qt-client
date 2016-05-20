@@ -40,7 +40,6 @@ protected:
 protected slots:
     virtual void languageChange();
     virtual void sHandleTransmitGroup();
-    virtual void sHandleType();
 
 private:
     int _mode;

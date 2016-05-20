@@ -13,7 +13,6 @@
 #include <QMessageBox>
 #include <QSqlError>
 #include <QVariant>
-#include <errorReporter.h>
 
 labelForm::labelForm(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -105,18 +104,18 @@ void labelForm::sSave()
       _name->setFocus();
       return;
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Label Information"),
-                                  labelSave, __FILE__, __LINE__))
+    else if (labelSave.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, labelSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
     labelSave.exec("SELECT NEXTVAL('labelform_labelform_id_seq') AS _labelform_id");
     if (labelSave.first())
       _labelformid = labelSave.value("_labelform_id").toInt();
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Label Information"),
-                                  labelSave, __FILE__, __LINE__))
+    else if (labelSave.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, labelSave.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 
@@ -137,9 +136,9 @@ void labelForm::sSave()
   labelSave.bindValue(":labelform_report_name", _report->code());
   labelSave.bindValue(":labelform_perpage", _labelsPerPage->value());
   labelSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Label Information"),
-                                labelSave, __FILE__, __LINE__))
+  if (labelSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, labelSave.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -160,9 +159,9 @@ void labelForm::populate()
     _report->setCode(labelpopulate.value("labelform_report_name").toString());
     _labelsPerPage->setValue(labelpopulate.value("labelform_perpage").toInt());
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Label Information"),
-                                labelpopulate, __FILE__, __LINE__))
+  else if (labelpopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, labelpopulate.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 }

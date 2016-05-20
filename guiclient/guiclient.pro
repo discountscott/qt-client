@@ -1,18 +1,9 @@
 include( ../global.pri )
 
 TARGET   = xtuple
-CONFIG   += qt warn_on
-
-QT += xml sql script scripttools network
-QT += webkit xmlpatterns printsupport webkitwidgets
-
-isEqual(QT_MAJOR_VERSION, 5) {
-  QT     += help designer uitools quick websockets webchannel serialport
-} else {
-  CONFIG += help designer uitools
-}
-
+CONFIG   += qt warn_on uitools designer help
 TEMPLATE = app
+QT += designer help uitools
 
 INCLUDEPATH += ../scriptapi \
                ../common \
@@ -95,7 +86,6 @@ MOC_DIR     = moc
 UI_DIR      = ui
 
 FORMS =   absoluteCalendarItem.ui               \
-          account1099.ui                        \
           accountNumber.ui                      \
           accountNumbers.ui                     \
           accountingPeriod.ui                   \
@@ -175,7 +165,6 @@ FORMS =   absoluteCalendarItem.ui               \
           configurePO.ui                        \
           configureSearchPath.ui                \
           configureSO.ui                        \
-          configureWF.ui							\
           configureWO.ui                        \
           confirmAchOK.ui                       \
           contact.ui                            \
@@ -254,13 +243,11 @@ FORMS =   absoluteCalendarItem.ui               \
           dspCountSlipEditList.ui               \
           dspCountTagEditList.ui                \
           dspCreditCardTransactions.ui          \
-          dspFinancialReport.ui                 \
-          dspInvoiceInformation.ui              \
-          dspMRPDetail.ui                       \
-          dspTax1099.ui                 \
-          dspTaxHistory.ui              \
-          dspTaxReturn.ui               \
-          duplicateAccountNumbers.ui    \
+          dspFinancialReport.ui                         \
+          dspInvoiceInformation.ui                      \
+          dspMRPDetail.ui                               \
+          dspTaxHistory.ui                              \
+          duplicateAccountNumbers.ui            \
           editOwners.ui                 \
           empGroup.ui                   \
           empGroups.ui                  \
@@ -414,7 +401,6 @@ FORMS =   absoluteCalendarItem.ui               \
           priceList.ui                          \
           pricingScheduleAssignment.ui          \
           pricingScheduleAssignments.ui         \
-          printApOpenItem.ui                    \
           printArOpenItem.ui                    \
           printCheck.ui                         \
           printChecks.ui                        \
@@ -433,7 +419,6 @@ FORMS =   absoluteCalendarItem.ui               \
           printPackingList.ui                   \
           printPackingListBatchByShipvia.ui     \
           printPoForm.ui                        \
-          printToForm.ui                        \
           printPurchaseOrder.ui                 \
           printPurchaseOrdersByAgent.ui         \
           printQuote.ui                         \
@@ -511,7 +496,6 @@ FORMS =   absoluteCalendarItem.ui               \
           salesOrder.ui                         \
           salesOrderInformation.ui              \
           salesOrderItem.ui                     \
-          salesOrderSimple.ui                     \
           salesRep.ui                           \
           salesReps.ui                          \
           saleType.ui                           \
@@ -632,6 +616,7 @@ FORMS =   absoluteCalendarItem.ui               \
           vendorPriceList.ui                    \
           vendorType.ui                         \
           vendorTypes.ui                        \
+          vendorWorkBench.ui                    \
           viewCheckRun.ui                       \
           voidChecks.ui                         \
           voucher.ui                            \
@@ -648,12 +633,10 @@ FORMS =   absoluteCalendarItem.ui               \
           xdateinputdialog.ui                   \
           xsltMap.ui                            \
           zeroUncountedCountTagsByWarehouse.ui  \
-    printStatementsByCustomerGroup.ui
 
 HEADERS = ../common/format.h                    \
           SaveSizePositionEventFilter.h         \
           absoluteCalendarItem.h                \
-          account1099.h                         \
           accountNumber.h                       \
           accountNumbers.h                      \
           accountingPeriod.h                    \
@@ -735,7 +718,6 @@ HEADERS = ../common/format.h                    \
           configurePO.h                 \
           configureSearchPath.h         \
           configureSO.h                 \
-          configureWF.h					\
           configureWO.h                 \
           confirmAchOK.h                \
           contact.h                     \
@@ -821,12 +803,10 @@ HEADERS = ../common/format.h                    \
           dspCountSlipEditList.h                \
           dspCountTagEditList.h                 \
           dspCreditCardTransactions.h           \
-          dspFinancialReport.h                  \
-          dspInvoiceInformation.h               \
-          dspMRPDetail.h                        \
-          dspTax1099.h                          \
-          dspTaxHistory.h                       \
-          dspTaxReturn.h                        \
+          dspFinancialReport.h                          \
+          dspInvoiceInformation.h                       \
+          dspMRPDetail.h                                \
+          dspTaxHistory.h                               \
           duplicateAccountNumbers.h             \
           editOwners.h                          \
           empGroup.h                            \
@@ -904,7 +884,6 @@ HEADERS = ../common/format.h                    \
           incidentSeverity.h            \
           incidentWorkbench.h           \
           inputManager.h                \
-          inputManagerPrivate.h         \
           invoice.h                     \
           invoiceItem.h                 \
           invoiceList.h                 \
@@ -1010,7 +989,6 @@ HEADERS = ../common/format.h                    \
           priceList.h                   \
           pricingScheduleAssignment.h   \
           pricingScheduleAssignments.h  \
-          printApOpenItem.h             \
           printArOpenItem.h             \
           printCheck.h                  \
           printChecks.h                 \
@@ -1029,7 +1007,6 @@ HEADERS = ../common/format.h                    \
           printPackingList.h            \
           printPackingListBatchByShipvia.h      \
           printPoForm.h                 \
-          printToForm.h                 \
           printPurchaseOrder.h          \
           printPurchaseOrdersByAgent.h  \
           printQuote.h                  \
@@ -1108,7 +1085,6 @@ HEADERS = ../common/format.h                    \
           salesOrder.h                          \
           salesOrderInformation.h               \
           salesOrderItem.h                      \
-          salesOrderSimple.h                     \
           salesRep.h                            \
           salesReps.h                           \
           saleType.h                            \
@@ -1237,6 +1213,7 @@ HEADERS = ../common/format.h                    \
           vendorPriceList.h             \
           vendorType.h                  \
           vendorTypes.h                 \
+          vendorWorkBench.h             \
           vendors.h                     \
           verisignprocessor.h           \
           version.h                     \
@@ -1267,11 +1244,9 @@ HEADERS = ../common/format.h                    \
           xuiloader.h                   \
           xwidget.h                     \
           yourpayprocessor.h            \
-          zeroUncountedCountTagsByWarehouse.h \
-    printStatementsByCustomerGroup.h
+          zeroUncountedCountTagsByWarehouse.h   \
 
 SOURCES = absoluteCalendarItem.cpp              \
-          account1099.cpp                       \
           accountNumber.cpp                     \
           accountNumbers.cpp                    \
           accountingPeriod.cpp                  \
@@ -1353,7 +1328,6 @@ SOURCES = absoluteCalendarItem.cpp              \
           configurePO.cpp                       \
           configureSearchPath.cpp               \
           configureSO.cpp                       \
-          configureWF.cpp						\
           configureWO.cpp                       \
           confirmAchOK.cpp                      \
           contact.cpp                           \
@@ -1439,12 +1413,10 @@ SOURCES = absoluteCalendarItem.cpp              \
           dspCountSlipEditList.cpp              \
           dspCountTagEditList.cpp               \
           dspCreditCardTransactions.cpp         \
-          dspFinancialReport.cpp                \
-          dspInvoiceInformation.cpp             \
-          dspMRPDetail.cpp                      \
-          dspTax1099.cpp                        \
-          dspTaxHistory.cpp                     \
-          dspTaxReturn.cpp                      \
+          dspFinancialReport.cpp                        \
+          dspInvoiceInformation.cpp                     \
+          dspMRPDetail.cpp                              \
+          dspTaxHistory.cpp                             \
           duplicateAccountNumbers.cpp           \
           editOwners.cpp                        \
           empGroup.cpp                          \
@@ -1626,7 +1598,6 @@ SOURCES = absoluteCalendarItem.cpp              \
           priceList.cpp                         \
           pricingScheduleAssignment.cpp         \
           pricingScheduleAssignments.cpp        \
-          printApOpenItem.cpp                   \
           printArOpenItem.cpp                   \
           printCheck.cpp                        \
           printChecks.cpp                       \
@@ -1645,7 +1616,6 @@ SOURCES = absoluteCalendarItem.cpp              \
           printPackingList.cpp                  \
           printPackingListBatchByShipvia.cpp    \
           printPoForm.cpp                       \
-          printToForm.cpp                       \
           printPurchaseOrder.cpp                \
           printPurchaseOrdersByAgent.cpp        \
           printQuote.cpp                        \
@@ -1724,7 +1694,6 @@ SOURCES = absoluteCalendarItem.cpp              \
           salesOrder.cpp                        \
           salesOrderInformation.cpp             \
           salesOrderItem.cpp                    \
-          salesOrderSimple.cpp                     \
           salesRep.cpp                          \
           salesReps.cpp                         \
           saleType.cpp                          \
@@ -1853,6 +1822,7 @@ SOURCES = absoluteCalendarItem.cpp              \
           vendorPriceList.cpp                   \
           vendorType.cpp                        \
           vendorTypes.cpp                       \
+          vendorWorkBench.cpp                   \
           vendors.cpp                           \
           verisignprocessor.cpp                 \
           version.cpp                           \
@@ -1884,10 +1854,14 @@ SOURCES = absoluteCalendarItem.cpp              \
           xwidget.cpp                           \
           yourpayprocessor.cpp                  \
           zeroUncountedCountTagsByWarehouse.cpp \
-    printStatementsByCustomerGroup.cpp
 
 include( displays/displays.pri )
 include( hunspell.pri )
 
+QT += xml sql script scripttools network quick
+QT += webkit xmlpatterns printsupport webkitwidgets
+
 RESOURCES += guiclient.qrc $${OPENRPT_IMAGE_DIR}/OpenRPTMetaSQL.qrc
+
+#CONFIG += debug
 

@@ -158,14 +158,8 @@ void filterManager::deleteFilter()
 void filterManager::handleButtons(bool valid)
 {
   _share->setEnabled(valid &&
-                     !_filterSet->currentItem()->rawValue("shared").toBool() &&
-                     _x_privileges->check("AllowSharedFilterEdit"));
+                     !_filterSet->currentItem()->rawValue("shared").toBool());
+  _delete->setEnabled(valid);
 
-  _delete->setEnabled(valid &&
-                     (!_filterSet->currentItem()->rawValue("shared").toBool() ||
-                      _x_privileges->check("AllowSharedFilterEdit")));
-
-  _unshare->setEnabled(valid &&
-                       _filterSet->currentItem()->rawValue("shared").toBool() &&
-                       _x_privileges->check("AllowSharedFilterEdit"));
+	_unshare->setEnabled(valid && _filterSet->currentItem()->rawValue("shared").toBool());
 }

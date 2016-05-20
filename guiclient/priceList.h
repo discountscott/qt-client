@@ -33,9 +33,7 @@ public slots:
     virtual void sFillList();
 
 protected:
-    int _saletypeid;
     int _shiptoid;
-    int _shipzoneid;
     QString _shiptonum;
     int _prodcatid;
     int _custtypeid;

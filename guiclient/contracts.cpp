@@ -20,7 +20,6 @@
 #include "copyContract.h"
 #include "guiclient.h"
 #include "parameterwidget.h"
-#include "errorReporter.h"
 
 contracts::contracts(QWidget* parent, const char*, Qt::WindowFlags fl)
   : display(parent, "contracts", fl)
@@ -165,9 +164,9 @@ void contracts::sDelete()
                           "WHERE (itemsrc_contrct_id=:contrct_id);");
       itemDelete.bindValue(":contrct_id", list()->id());
       itemDelete.exec();
-      if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Contract"),
-                                    itemDelete, __FILE__, __LINE__))
+      if (itemDelete.lastError().type() != QSqlError::NoError)
       {
+        systemError(this, itemDelete.lastError().databaseText(), __FILE__, __LINE__);
         return;
       }
     }
@@ -177,9 +176,9 @@ void contracts::sDelete()
                           "WHERE (itemsrc_contrct_id=:contrct_id);");
       itemDelete.bindValue(":contrct_id", list()->id());
       itemDelete.exec();
-      if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Contract"),
-                                    itemDelete, __FILE__, __LINE__))
+      if (itemDelete.lastError().type() != QSqlError::NoError)
       {
+        systemError(this, itemDelete.lastError().databaseText(), __FILE__, __LINE__);
         return;
       }
     }
@@ -188,9 +187,9 @@ void contracts::sDelete()
                         "WHERE (contrct_id=:contrct_id);");
     itemDelete.bindValue(":contrct_id", list()->id());
     itemDelete.exec();
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Contract"),
-                                  itemDelete, __FILE__, __LINE__))
+    if (itemDelete.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, itemDelete.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
 

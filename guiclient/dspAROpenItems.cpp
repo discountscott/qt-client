@@ -45,8 +45,6 @@
 #include "salesOrder.h"
 #include "storedProcErrorLookup.h"
 
-#include "errorReporter.h"
-
 dspAROpenItems::dspAROpenItems(QWidget* parent, const char*, Qt::WindowFlags fl)
   : display(parent, "dspAROpenItems", fl)
 {
@@ -118,7 +116,7 @@ dspAROpenItems::dspAROpenItems(QWidget* parent, const char*, Qt::WindowFlags fl)
   menuItem = newMenu->addAction(tr("Misc. Debit Memo"),   this, SLOT(sEnterMiscArDebitMemo()));
   menuItem->setEnabled(_privileges->check("MaintainARMemos"));
   newMenu->addSeparator();
-  menuItem = newMenu->addAction(tr("Sales Credit Memo"), this, SLOT(sNewCreditMemo()));
+  menuItem = newMenu->addAction(tr("Return"), this, SLOT(sNewCreditMemo()));
   menuItem->setEnabled(_privileges->check("MaintainCreditMemos"));
   menuItem = newMenu->addAction(tr("Misc. Credit Memo"),   this, SLOT(sEnterMiscArCreditMemo()));
   menuItem->setEnabled(_privileges->check("MaintainARMemos"));
@@ -197,7 +195,7 @@ void dspAROpenItems::sPopulateMenu(QMenu *pMenu, QTreeWidgetItem *pItem, int)
   else if (((XTreeWidgetItem *)pItem)->altId() == 1 && ((XTreeWidgetItem *)pItem)->id("docnumber") > -1)
   // Credit Memo
   {
-    menuItem = pMenu->addAction(tr("Edit Credit Memo..."), this, SLOT(sEdit()));
+    menuItem = pMenu->addAction(tr("Edit Return..."), this, SLOT(sEdit()));
     menuItem->setEnabled(_privileges->check("MaintainCreditMemos"));
   }
   else if (((XTreeWidgetItem *)pItem)->id() > 0)
@@ -248,7 +246,7 @@ void dspAROpenItems::sPopulateMenu(QMenu *pMenu, QTreeWidgetItem *pItem, int)
       menuItem->setEnabled(_privileges->check("VoidPostedARCreditMemos"));
     }
 
-    menuItem = pMenu->addAction(tr("View Credit Memo..."), this, SLOT(sViewCreditMemo()));
+    menuItem = pMenu->addAction(tr("View Return..."), this, SLOT(sViewCreditMemo()));
     menuItem->setEnabled(_privileges->check("MaintainCreditMemos") || _privileges->check("ViewCreditMemos"));
   }
   else if (((XTreeWidgetItem *)pItem)->altId() == 4)
@@ -426,9 +424,9 @@ void dspAROpenItems::sCCRefundCM()
     currid  = dspCCRefundCM.value("aropen_curr_id").toInt();
     docnum  = dspCCRefundCM.value("aropen_docnumber").toString();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving AR Information"),
-                                dspCCRefundCM, __FILE__, __LINE__))
+  else if (dspCCRefundCM.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, dspCCRefundCM.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
   else
@@ -465,9 +463,9 @@ void dspAROpenItems::sCCRefundCM()
 
 void dspAROpenItems::sDeleteCreditMemo()
 {
-  if (QMessageBox::question(this, tr("Delete Selected Credit Memos?"),
+  if (QMessageBox::question(this, tr("Delete Selected Returns?"),
                             tr("<p>Are you sure that you want to delete the "
-			       "selected Credit Memos?"),
+			       "selected Returns?"),
                             QMessageBox::Yes, QMessageBox::No | QMessageBox::Default) == QMessageBox::Yes)
   {
     XSqlQuery delq;
@@ -480,14 +478,13 @@ void dspAROpenItems::sDeleteCreditMemo()
       if (delq.first())
       {
             if (! delq.value("result").toBool())
-              ErrorReporter::error(QtCriticalMsg, this,
-                                 tr("Error Deleting Credit Memo %1\n").arg(list()->currentItem()->text("docnumber")),
-                                 delq, __FILE__, __LINE__);
+              systemError(this, tr("Could not delete Return."),
+                          __FILE__, __LINE__);
       }
       else if (delq.lastError().type() != QSqlError::NoError)
-        ErrorReporter::error(QtCriticalMsg,
-                         this, tr("Error Deleting Credit Memo %1\n").arg(list()->currentItem()->text("docnumber")),
-                         delq, __FILE__, __LINE__);
+            systemError(this,
+                        tr("Error deleting Return %1\n").arg(list()->currentItem()->text("docnumber")) +
+                        delq.lastError().databaseText(), __FILE__, __LINE__);
     }
 
     omfgThis->sCreditMemosUpdated();
@@ -513,16 +510,14 @@ void dspAROpenItems::sDeleteInvoice()
             int result = dspDeleteInvoice.value("result").toInt();
             if (result < 0)
             {
-              ErrorReporter::error(QtCriticalMsg, this,
-                                   tr("Error Deleting Invoice %1\n").arg(list()->currentItem()->text("docnumber")),
-                                   storedProcErrorLookup("deleteInvoice", result),
-                                   __FILE__, __LINE__);
+              systemError(this, storedProcErrorLookup("deleteInvoice", result),
+                          __FILE__, __LINE__);
             }
       }
-      else
-          ErrorReporter::error(QtCriticalMsg, this,
-                               tr("Error Deleting Invoice %1\n").arg(list()->currentItem()->text("docnumber")),
-                               dspDeleteInvoice, __FILE__, __LINE__);
+      else if (dspDeleteInvoice.lastError().type() != QSqlError::NoError)
+            systemError(this,
+                        tr("Error deleting Invoice %1\n").arg(list()->currentItem()->text("docnumber")) +
+                        dspDeleteInvoice.lastError().databaseText(), __FILE__, __LINE__);
     }
 
     omfgThis->sInvoicesUpdated(-1, true);
@@ -639,8 +634,8 @@ void dspAROpenItems::sVoidCreditMemo()
   XSqlQuery dspVoidCreditMemo;
   XTreeWidgetItem *pItem = list()->currentItem();
   if(pItem->rawValue("posted") != 0 &&
-      QMessageBox::question(this, tr("Void Posted Credit Memo?"),
-                            tr("<p>This Credit Memo has already been posted. "
+      QMessageBox::question(this, tr("Void Posted Return?"),
+                            tr("<p>This Return has already been posted. "
                                "Are you sure you want to void it?"),
                             QMessageBox::Yes,
                             QMessageBox::No | QMessageBox::Default) == QMessageBox::No)
@@ -663,16 +658,14 @@ void dspAROpenItems::sVoidCreditMemo()
     if (result < 0)
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this,
-                              tr("Error Voiding Credit Memo %1\n").arg(list()->currentItem()->text("docnumber")),
-                               storedProcErrorLookup("voidCreditMemo", result),
-                               __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("voidCreditMemo", result),
+                      __FILE__, __LINE__);
       return;
     }
     else if (distributeInventory::SeriesAdjust(result, this) == XDialog::Rejected)
     {
       rollback.exec();
-      QMessageBox::information( this, tr("Void Memo"), tr("Transaction Canceled") );
+      QMessageBox::information( this, tr("Void Return"), tr("Transaction Canceled") );
       return;
     }
 
@@ -682,9 +675,9 @@ void dspAROpenItems::sVoidCreditMemo()
   else if (post.lastError().type() != QSqlError::NoError)
   {
     rollback.exec();
-    ErrorReporter::error(QtCriticalMsg,this,
-                         tr("Error Voiding Credit Memo %1\n").arg(list()->currentItem()->text("docnumber")),
-                         post, __FILE__, __LINE__);
+    systemError(this, tr("A System Error occurred voiding Return.\n%1")
+                .arg(post.lastError().databaseText()),
+                __FILE__, __LINE__);
   }
 }
 
@@ -819,10 +812,8 @@ void dspAROpenItems::sVoidInvoiceDetails()
     if (result < 0)
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this,
-                           tr("Error Voiding Invoice %1\n").arg(list()->currentItem()->text("docnumber")),
-                           storedProcErrorLookup("voidInvoice", result),
-                           __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("voidInvoice", result),
+                      __FILE__, __LINE__);
       return;
     }
     else if (distributeInventory::SeriesAdjust(result, this) == XDialog::Rejected)
@@ -838,9 +829,9 @@ void dspAROpenItems::sVoidInvoiceDetails()
   else if (post.lastError().type() != QSqlError::NoError)
   {
     rollback.exec();
-    ErrorReporter::error(QtCriticalMsg, this,
-                         tr("Error Voiding Invoice %1\n").arg(list()->currentItem()->text("docnumber")),
-                         post, __FILE__, __LINE__);
+    systemError(this, tr("A System Error occurred voiding Invoice.\n%1")
+                .arg(post.lastError().databaseText()),
+                __FILE__, __LINE__);
   }
 }
 
@@ -901,7 +892,7 @@ bool dspAROpenItems::setParams(ParameterList &params)
     params.append("endDueDate", _dates->endDate());
   }
   params.append("invoice", tr("Invoice"));
-  params.append("return", tr("Sales Credit Memo"));
+  params.append("return", tr("Return"));
   params.append("creditMemo", tr("Credit Memo"));
   params.append("debitMemo", tr("Debit Memo"));
   params.append("cashdeposit", tr("Customer Deposit"));
@@ -931,7 +922,7 @@ void dspAROpenItems::sPreview()
     ParameterList params;
     params.append("cust_id", _customerSelector->custId());
     params.append("invoice",  tr("Invoice"));
-    params.append("return",   tr("Sales Credit Memo"));
+    params.append("return",   tr("Return"));
     params.append("debit",    tr("Debit Memo"));
     params.append("credit",   tr("Credit Memo"));
     params.append("deposit",  tr("Deposit"));
@@ -1062,7 +1053,7 @@ void dspAROpenItems::sPostCreditMemo()
   if (_privileges->check("ChangeSOMemoPostDate"))
   {
     getGLDistDate newdlg(this, "", true);
-    newdlg.sSetDefaultLit(tr("Credit Memo Date"));
+    newdlg.sSetDefaultLit(tr("Return Date"));
     if (newdlg.exec() == XDialog::Accepted)
     {
       newDate = newdlg.date();
@@ -1083,9 +1074,7 @@ void dspAROpenItems::sPostCreditMemo()
     setDate.exec();
     if (setDate.lastError().type() != QSqlError::NoError)
     {
-          ErrorReporter::error(QtCriticalMsg, this,
-                               tr("Error Posting Credit Memo %1\n").arg(list()->currentItem()->text("docnumber")),
-                               setDate, __FILE__, __LINE__);
+          systemError(this, setDate.lastError().databaseText(), __FILE__, __LINE__);
     }
   }
 
@@ -1106,10 +1095,8 @@ void dspAROpenItems::sPostCreditMemo()
     if (result < 0)
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this,
-                           tr("Error Posting Credit Memo %1\n").arg(list()->currentItem()->text("docnumber")),
-                           storedProcErrorLookup("postCreditMemo", result),
-                           __FILE__, __LINE__);
+      systemError( this, storedProcErrorLookup("postCreditMemo", result),
+            __FILE__, __LINE__);
       return;
     }
     else
@@ -1117,7 +1104,7 @@ void dspAROpenItems::sPostCreditMemo()
       if (distributeInventory::SeriesAdjust(result, this) == XDialog::Rejected)
       {
         rollback.exec();
-        QMessageBox::information( this, tr("Post Credit Memo"), tr("Transaction Canceled") );
+        QMessageBox::information( this, tr("Post Return"), tr("Transaction Canceled") );
         return;
       }
 
@@ -1128,19 +1115,17 @@ void dspAROpenItems::sPostCreditMemo()
   else if (postq.lastError().databaseText().contains("post to closed period"))
   {
     rollback.exec();
-    ErrorReporter::error(QtCriticalMsg, this,
-                         tr("Error Posting Credit Memo %1\n").arg(list()->currentItem()->text("docnumber")),
-                         postq, __FILE__, __LINE__);
+    systemError(this, tr("Could not post Return #%1 because of a missing exchange rate.")
+                                      .arg(list()->currentItem()->text("docnumber")));
     return;
   }
   else if (postq.lastError().type() != QSqlError::NoError)
   {
     rollback.exec();
-    ErrorReporter::error(QtCriticalMsg, this,
-                         tr("Error Posting Credit Memo#%1.\n%2")
-                                     .arg(list()->currentItem()->text("docnumber"))
-                                     .arg(postq.lastError().databaseText()),
-                         postq, __FILE__, __LINE__);
+    systemError(this, tr("A System Error occurred posting Return#%1.\n%2")
+            .arg(list()->currentItem()->text("docnumber"))
+            .arg(postq.lastError().databaseText()),
+          __FILE__, __LINE__);
   }
 
   omfgThis->sCreditMemosUpdated();
@@ -1178,22 +1163,13 @@ void dspAROpenItems::sPostInvoice()
     journal = dspPostInvoice.value("result").toInt();
     if (journal < 0)
     {
-      ErrorReporter::error(QtCriticalMsg, this,
-                           tr("Error Posting Invoice#%1.\n%2")
-                                       .arg(list()->currentItem()->text("docnumber"))
-                                       .arg(dspPostInvoice.lastError().databaseText()),
-                             storedProcErrorLookup("fetchJournalNumber", journal),
-                             __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("fetchJournalNumber", journal), __FILE__, __LINE__);
       return;
     }
   }
   else if (dspPostInvoice.lastError().type() != QSqlError::NoError)
   {
-    ErrorReporter::error(QtCriticalMsg, this,
-                         tr("Error Posting Invoice#%1.\n%2")
-                                     .arg(list()->currentItem()->text("docnumber"))
-                                     .arg(dspPostInvoice.lastError().databaseText()),
-                         dspPostInvoice, __FILE__, __LINE__);
+    systemError(this, dspPostInvoice.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -1223,11 +1199,7 @@ void dspAROpenItems::sPostInvoice()
     setDate.bindValue(":invchead_id", list()->currentItem()->id("docnumber"));
     setDate.exec();
     if (setDate.lastError().type() != QSqlError::NoError)
-      ErrorReporter::error(QtCriticalMsg, this,
-                         tr("Error Posting Invoice#%1.\n%2")
-                                       .arg(list()->currentItem()->text("docnumber"))
-                                       .arg(setDate.lastError().databaseText()),
-                         setDate, __FILE__, __LINE__);
+      systemError(this, setDate.lastError().databaseText(), __FILE__, __LINE__);
   }
 
   sum.bindValue(":invchead_id", list()->currentItem()->id("docnumber"));
@@ -1251,31 +1223,23 @@ void dspAROpenItems::sPostInvoice()
       xrate.exec();
       if (xrate.lastError().type() != QSqlError::NoError)
       {
-        ErrorReporter::error(QtCriticalMsg, this,
-                             tr("Error Posting Invoice#%1.\n%2")
-                                         .arg(list()->currentItem()->text("docnumber"))
-                                         .arg(xrate.lastError().databaseText()),
-                             xrate, __FILE__, __LINE__);
+        systemError(this, tr("System Error posting Invoice #%1\n%2")
+                            .arg(list()->currentItem()->text("docnumber"))
+                            .arg(xrate.lastError().databaseText()),
+                        __FILE__, __LINE__);
         return;
       }
       else if (!xrate.first() || xrate.value("curr_rate").isNull())
       {
-        ErrorReporter::error(QtCriticalMsg, this,
-                             tr("Error Posting Invoice#%1.\n%2")
-                                         .arg(list()->currentItem()->text("docnumber"))
-                                         .arg(xrate.lastError().databaseText()),
-                             xrate, __FILE__, __LINE__);
+        systemError(this, tr("Could not post Invoice #%1 because of a missing exchange rate.")
+                                        .arg(list()->currentItem()->text("docnumber")));
         return;
       }
     }
   }
   else if (sum.lastError().type() != QSqlError::NoError)
   {
-    ErrorReporter::error(QtCriticalMsg, this,
-                         tr("Error Posting Invoice#%1.\n%2")
-                                     .arg(list()->currentItem()->text("docnumber"))
-                                     .arg(sum.lastError().databaseText()),
-                         sum, __FILE__, __LINE__);
+    systemError(this, sum.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
 
@@ -1291,12 +1255,8 @@ void dspAROpenItems::sPostInvoice()
     if (result < 0)
     {
       rollback.exec();
-      ErrorReporter::error(QtCriticalMsg, this,
-                           tr("Error Posting Invoice#%1.\n%2")
-                                       .arg(list()->currentItem()->text("docnumber"))
-                                       .arg(post.lastError().databaseText()),
-                           storedProcErrorLookup("postInvoice", result),
-                           __FILE__, __LINE__);
+      systemError(this, storedProcErrorLookup("postInvoice", result),
+                  __FILE__, __LINE__);
     }
     else
     {
@@ -1314,20 +1274,16 @@ void dspAROpenItems::sPostInvoice()
   else if (post.lastError().databaseText().contains("post to closed period"))
   {
     rollback.exec();
-    ErrorReporter::error(QtCriticalMsg, this,
-                         tr("Error Posting Invoice#%1.\n%2")
-                                     .arg(list()->currentItem()->text("docnumber"))
-                                     .arg(post.lastError().databaseText()),
-                         post, __FILE__, __LINE__);
+    systemError(this, tr("Could not post Invoice #%1 into a closed period.")
+                            .arg(list()->currentItem()->text("docnumber")));
   }
   else if (post.lastError().type() != QSqlError::NoError)
   {
     rollback.exec();
-    ErrorReporter::error(QtCriticalMsg, this,
-                         tr("Error Posting Invoice#%1.\n%2")
-                                     .arg(list()->currentItem()->text("docnumber"))
-                                     .arg(post.lastError().databaseText()),
-                         post, __FILE__, __LINE__);
+    systemError(this, tr("A System Error occurred posting Invoice #%1.\n%2")
+                .arg(list()->currentItem()->text("docnumber"))
+                    .arg(post.lastError().databaseText()),
+                    __FILE__, __LINE__);
   }
 
   omfgThis->sInvoicesUpdated(-1, true);
@@ -1387,7 +1343,7 @@ bool dspAROpenItems::checkCreditMemoSitePrivs(int cmid)
     if (!check.value("result").toBool())
       {
         QMessageBox::critical(this, tr("Access Denied"),
-                                       tr("You may not view or edit this Credit Memo as it references "
+                                       tr("You may not view or edit this Return as it references "
                                        "a Site for which you have not been granted privileges.")) ;
         return false;
       }

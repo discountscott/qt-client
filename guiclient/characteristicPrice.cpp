@@ -13,7 +13,6 @@
 #include <QMessageBox>
 #include <QSqlError>
 #include <QVariant>
-#include <errorReporter.h>
 
 characteristicPrice::characteristicPrice(QWidget* parent, const char* name, bool modal, Qt::WindowFlags fl)
     : XDialog(parent, name, modal, fl)
@@ -132,9 +131,10 @@ void characteristicPrice::sSave()
   characteristicSave.bindValue(":ipsitemchar_value", _value->currentText());
   characteristicSave.bindValue(":ipsitemchar_price", _price->localValue());
   characteristicSave.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving Characteristic Price"),
-                                characteristicSave, __FILE__, __LINE__))
+  if (characteristicSave.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, _rejectedMsg.arg(characteristicSave.lastError().databaseText()),
+                  __FILE__, __LINE__);
     done(-1);
   }
 
@@ -159,9 +159,10 @@ void characteristicPrice::sCheck()
     _mode = cEdit;
     populate();
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Characteristic Information"),
-                                characteristicCheck, __FILE__, __LINE__))
+  else if (characteristicCheck.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, _rejectedMsg.arg(characteristicCheck.lastError().databaseText()),
+                  __FILE__, __LINE__);
     done(-1);
   }
   else
@@ -185,9 +186,10 @@ void characteristicPrice::populate()
     _value->setText(characteristicpopulate.value("ipsitemchar_value").toString());
     _price->setLocalValue(characteristicpopulate.value("ipsitemchar_price").toDouble());
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Characteristic Information"),
-                                characteristicpopulate, __FILE__, __LINE__))
+  else if (characteristicpopulate.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, _rejectedMsg.arg(characteristicpopulate.lastError().databaseText()),
+                  __FILE__, __LINE__);
     done(-1);
   }
   connect(_char, SIGNAL(newID(int)), this, SLOT(sCheck()));
@@ -209,9 +211,10 @@ void characteristicPrice::populateItemcharInfo()
   characteristicpopulateItemcharInfo.exec();
   if (characteristicpopulateItemcharInfo.first())
     _listPrice->setLocalValue(characteristicpopulateItemcharInfo.value("charass_price").toDouble());
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Characteristic Information"),
-                                characteristicpopulateItemcharInfo, __FILE__, __LINE__))
+  else if (characteristicpopulateItemcharInfo.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, _rejectedMsg.arg(characteristicpopulateItemcharInfo.lastError().databaseText()),
+                  __FILE__, __LINE__);
     done(-1);
   }
   else
@@ -231,9 +234,10 @@ void characteristicPrice::sCharIdChanged()
   charass.bindValue(":item_id", _itemid);
   charass.bindValue(":char_id", _char->id());
   charass.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Retrieving Characteristic Information"),
-                                charass, __FILE__, __LINE__))
+  if (characteristicCharIdChanged.lastError().type() != QSqlError::NoError)
   {
+    systemError(this, _rejectedMsg.arg(characteristicCharIdChanged.lastError().databaseText()),
+                  __FILE__, __LINE__);
     done(-1);
   }
   _value->populate(charass);

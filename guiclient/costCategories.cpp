@@ -19,7 +19,6 @@
 #include <openreports.h>
 #include "costCategory.h"
 #include "itemSites.h"
-#include "errorReporter.h"
 
 costCategories::costCategories(QWidget* parent, const char* name, Qt::WindowFlags fl)
     : XWidget(parent, name, fl)
@@ -141,9 +140,9 @@ void costCategories::sDelete()
                                    "deleted as it still contains Items. You "
                                    "must reassign these Items before deleting "
                                    "this Cost Category.") );
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Deleting Cost Category"),
-                                  costDelete, __FILE__, __LINE__))
+    else if (costDelete.lastError().type() != QSqlError::NoError)
     {
+      systemError(this, costDelete.lastError().databaseText(), __FILE__, __LINE__);
       return;
     }
     else

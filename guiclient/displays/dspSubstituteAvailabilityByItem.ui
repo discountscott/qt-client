@@ -151,7 +151,6 @@ to be bound by its terms.</comment>
    <class>DLineEdit</class>
    <extends>QWidget</extends>
    <header>datecluster.h</header>
-   <container>1</container>
   </customwidget>
   <customwidget>
    <class>ItemCluster</class>
@@ -163,7 +162,6 @@ to be bound by its terms.</comment>
    <class>WarehouseGroup</class>
    <extends>QGroupBox</extends>
    <header>warehousegroup.h</header>
-   <container>1</container>
   </customwidget>
   <customwidget>
    <class>XCheckBox</class>
